@@ -292,7 +292,7 @@
             </div>
         </div>
         <div class="grid-2" style="margin-top: 5px;">
-            <input type="text" id="manID" placeholder="ID (Opzionale)">
+            <input type="number" id="manPeso" placeholder="Peso Contenuto (KG)">
             <button class="btn-primary" style="margin-top: 0; padding: 8px;" onclick="aggiungiCassaManuale()">➕ AGGIUNGI</button>
         </div>
     </div>
@@ -383,7 +383,7 @@ const SELECT_OPTIONS = `
     <option value="l">↔️ L (Int)</option>
     <option value="p">↕️ P (Int)</option>
     <option value="h">⬆️ H (Int)</option>
-    <option value="peso">⚖️ Peso Apparato (KG)</option>
+    <option value="peso">⚖️ Peso Contenuto (KG)</option>
 `;
 
 function writeLog(m, col="#10b981") { 
@@ -519,15 +519,18 @@ function aggiungiCassaManuale() {
     let l_cm = parseFloat(document.getElementById('manL').value) || 100;
     let p_cm = parseFloat(document.getElementById('manP').value) || 80;
     let h_cm = parseFloat(document.getElementById('manH').value) || 60;
-    let idStr = document.getElementById('manID').value.trim();
-    if(idStr === "") idStr = `Cassa-${cassaIdCounter++}`;
+    
+    let pesoStr = document.getElementById('manPeso').value.trim();
+    let idStr = `Cassa-${cassaIdCounter++}`;
 
-    let newItem = { id: idStr, L: l_cm * 10, P: p_cm * 10, H: h_cm * 10, pesoApparato: 0 };
+    let pesoVal = pesoStr !== "" && !isNaN(parseFloat(pesoStr)) ? parseFloat(pesoStr) : 0;
+
+    let newItem = { id: idStr, L: l_cm * 10, P: p_cm * 10, H: h_cm * 10, pesoContenuto: pesoVal };
     calcolaBox(newItem);
     itemsMaster.push(newItem);
     
     writeLog(`Cassa ${idStr} aggiunta.`);
-    document.getElementById('manID').value = ""; 
+    document.getElementById('manPeso').value = ""; 
     renderBoxes();
 }
 
@@ -569,7 +572,7 @@ function renderBoxes() {
         card.className = 'box-card';
         
         const dimF = item.results.dimensioniFinali;
-        let pApparato = (item.pesoApparato && item.pesoApparato !== "" && item.pesoApparato != 0) ? `${item.pesoApparato} KG` : "-";
+        let pContenuto = (item.pesoContenuto && item.pesoContenuto !== "" && item.pesoContenuto != 0) ? `${item.pesoContenuto} KG` : "-";
         let rinfChecked = item.results.rinf ? 'checked' : 'disabled';
 
         card.innerHTML = `
@@ -605,8 +608,8 @@ function renderBoxes() {
                             <div style="font-size:14px; font-weight:bold; color:#f59e0b;">${dimF.pesoLegno.toFixed(1)} KG</div>
                         </div>
                         <div style="background:#e2e8f0; padding:8px; border-radius:4px; flex:1; text-align:center;">
-                            <div style="font-size:10px; color:#64748b; text-transform:uppercase;">Peso Apparato</div>
-                            <div style="font-size:14px; font-weight:bold; color:#3b82f6;">${pApparato}</div>
+                            <div style="font-size:10px; color:#64748b; text-transform:uppercase;">Peso Contenuto</div>
+                            <div style="font-size:14px; font-weight:bold; color:#3b82f6;">${pContenuto}</div>
                         </div>
                     </div>
 
@@ -776,8 +779,8 @@ function exportToCuckooNest() {
         const dim = cassa.results.dimensioniFinali;
         let pesoVuota = dim.pesoLegno;
         let pesoPiena = pesoVuota;
-        if(cassa.pesoApparato && !isNaN(parseFloat(cassa.pesoApparato))) {
-            pesoPiena += parseFloat(cassa.pesoApparato);
+        if(cassa.pesoContenuto && !isNaN(parseFloat(cassa.pesoContenuto))) {
+            pesoPiena += parseFloat(cassa.pesoContenuto);
         }
 
         return {
@@ -805,7 +808,7 @@ function esportaExcel() {
         const ws1_data = [['ID Cassa', 'L Int. (cm)', 'P Int. (cm)', 'H Int. (cm)', 'L Est. (cm)', 'P Est. (cm)', 'H Est. (cm)', 'Peso Vuota (kg)', 'Peso Piena (kg)']];
         itemsMaster.forEach(c => {
             const d = c.results.dimensioniFinali;
-            let pPiena = d.pesoLegno + (parseFloat(c.pesoApparato) || 0);
+            let pPiena = d.pesoLegno + (parseFloat(c.pesoContenuto) || 0);
             ws1_data.push([c.id, c.L/10, c.P/10, c.H/10, d.lExt/10, d.pExt/10, d.hExt/10, d.pesoLegno.toFixed(2), pPiena.toFixed(2)]);
         });
         const allImb = getAggregatedParts('imbottitura');
@@ -1034,7 +1037,7 @@ function confirmImport() {
 
         rawDataGrid.forEach((row, rIndex) => {
             let generatedAutoId = String(rIndex + 1).padStart(3, '0');
-            let itm = { id: "", L: 0, P: 0, H: 0, pesoApparato: "" }; 
+            let itm = { id: "", L: 0, P: 0, H: 0, pesoContenuto: "" }; 
             
             for(let c=0; c<colMappings.length; c++) {
                 let map = colMappings[c]; let val = row[c];
@@ -1044,7 +1047,7 @@ function confirmImport() {
                 if(map === 'l') { let p = parseFloat(val.toString().replace(/[^\d.,-]/g, '').replace(',','.')); if(!isNaN(p)) itm.L = p * multiplier; }
                 if(map === 'p') { let p = parseFloat(val.toString().replace(/[^\d.,-]/g, '').replace(',','.')); if(!isNaN(p)) itm.P = p * multiplier; }
                 if(map === 'h') { let p = parseFloat(val.toString().replace(/[^\d.,-]/g, '').replace(',','.')); if(!isNaN(p)) itm.H = p * multiplier; }
-                if(map === 'peso') { let p = parseFloat(val.toString().replace(/[^\d.,-]/g, '').replace(',','.')); if(!isNaN(p)) itm.pesoApparato = p; }
+                if(map === 'peso') { let p = parseFloat(val.toString().replace(/[^\d.,-]/g, '').replace(',','.')); if(!isNaN(p)) itm.pesoContenuto = p; }
             }
             if(itm.id === "") itm.id = `Cassa-${generatedAutoId}`;
             if(itm.L > 0 && itm.P > 0 && itm.H > 0) {
@@ -1189,7 +1192,7 @@ function exportToCCB() {
             L: c.L,
             P: c.P,
             H: c.H,
-            pesoApparato: c.pesoApparato,
+            pesoContenuto: c.pesoContenuto,
             results: {
                 set: currentSettings, 
                 dimF: c.results.dimensioniFinali, 
