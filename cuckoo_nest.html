@@ -1333,21 +1333,54 @@ function exportDataExcel() {
         return; 
     }
     
+    // Mappatura con colonne standard per Packing List / Dogana
     let exportArr = validItems.map(i => {
-        let obj = { 
-            "ID": i.id, 
-            "Lunghezza": i.L, 
-            "Profondità": i.P, 
-            "Altezza": i.H 
+        let volume = ((i.L * i.P * i.H) / 1000000).toFixed(3);
+        let status = i.trip === -1 ? "Banchina" : `Viaggio #${i.trip + 1}`;
+        let pesoLordo = (i.peso !== undefined && i.peso !== "") ? parseFloat(i.peso) : "";
+
+        return { 
+            "ID Collo (Marks & Nos)": i.id,
+            "Viaggio / Assegnazione": status,
+            "Q.tà (Qty)": 1,
+            "Descrizione Merce (Description)": "", 
+            "HS Code (Cod. Doganale)": "",
+            "Origine (Origin)": "",
+            "Lunghezza (cm)": i.L, 
+            "Larghezza (cm)": i.P, 
+            "Altezza (cm)": i.H,
+            "Volume (m³)": parseFloat(volume),
+            "Peso Netto (Net Wt. KG)": "",
+            "Peso Lordo (Gross Wt. KG)": pesoLordo,
+            "Vincolo (Stacking)": getCardinalName(i.stackMode),
+            "Note": ""
         };
-        obj["Peso (KG)"] = (i.peso !== undefined && i.peso !== "") ? i.peso : "";
-        return obj;
     });
     
     const ws = XLSX.utils.json_to_sheet(exportArr); 
+    
+    // Formattazione larghezza colonne per una lettura ottimale in Excel
+    const wscols = [
+        {wch: 20}, // ID Collo
+        {wch: 20}, // Viaggio
+        {wch: 10}, // Q.tà
+        {wch: 35}, // Descrizione
+        {wch: 20}, // HS Code
+        {wch: 15}, // Origine
+        {wch: 15}, // L
+        {wch: 15}, // P
+        {wch: 15}, // H
+        {wch: 15}, // Vol
+        {wch: 20}, // Net
+        {wch: 22}, // Gross
+        {wch: 18}, // Vincolo
+        {wch: 25}  // Note
+    ];
+    ws['!cols'] = wscols;
+
     const wb = XLSX.utils.book_new(); 
-    XLSX.utils.book_append_sheet(wb, ws, "Carico"); 
-    XLSX.writeFile(wb, "Cuckoo_Nest_Export.xlsx"); 
+    XLSX.utils.book_append_sheet(wb, ws, "Packing List"); 
+    XLSX.writeFile(wb, `Piano_di_Carico_${new Date().getTime()}.xlsx`); 
 }
 
 // ==========================================
@@ -2228,13 +2261,12 @@ if ('serviceWorker' in navigator) {
             .catch(err => console.log('Errore Service Worker:', err)); 
     });
 }
-function exportToCCN() {
+async function exportToCCN() {
     if (itemsMaster.length === 0) { 
         alert('Nessuna cassa presente.'); 
         return; 
     }
     
-    // Raccogliamo i dati del camion, le impostazioni e la lista casse (resettando i viaggi)
     let bL = parseFloat(document.getElementById('bL').value);
     let bP = parseFloat(document.getElementById('bP').value);
     let bH = parseFloat(document.getElementById('bH').value);
@@ -2242,37 +2274,59 @@ function exportToCCN() {
     let mP = parseFloat(document.getElementById('mP').value);
     let mH = parseFloat(document.getElementById('mH').value);
 
-    // Resettiamo le coordinate per far ricalcolare tutto all'app mobile
-    let cassePulite = itemsMaster.map(c => ({
-        ...c, 
-        x: 9999, 
-        y: 20, 
-        z: 0, 
-        trip: -1, 
-        isChild: false, 
-        manual: false
-    }));
-
+    // NON azzeriamo le coordinate. Manteniamo x, y, z e isChild per mostrare 
+    // l'incastro esatto nel modello 3D del visore mobile.
     const exportData = {
         type: "CuckooNest",
-        version: "14.21",
+        version: "14.27",
         timestamp: new Date().toISOString(),
         vehicle: { L: bL, P: bP, H: bH },
         margins: { L: mL, P: mP, H: mH },
-        crates: cassePulite
+        crates: itemsMaster
     };
 
-    const jsonString = JSON.stringify(exportData, null, 2);
-    const blob = new Blob([jsonString], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `CaricoLogistico_${new Date().getTime()}.ccn`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    const jsonString = JSON.stringify(exportData).replace(/</g, '\\u003c');
+
+    try {
+        // Recupera il codice aggiornato del visualizzatore dalla stessa cartella
+        const response = await fetch('cuckoo_view.html');
+        if (!response.ok) throw new Error("Cuckoo View non trovato");
+        
+        let ccvHtml = await response.text();
+
+        // Rimuove eventuali dati payload esistenti se si sta leggendo un file già elaborato
+        ccvHtml = ccvHtml.replace(/<script id="cuckoo-payload-data" type="application\/json">.*?<\/script>/s, '');
+
+        // Inietta i dati JSON puri prima della chiusura del body
+        let scriptTag = `<script id="cuckoo-payload-data" type="application/json">${jsonString}</script>`;
+        ccvHtml = ccvHtml.replace('</body>', scriptTag + '\n</body>');
+
+        // Genera il file HTML standalone per il browser mobile
+        const blob = new Blob([ccvHtml], { type: "text/html" });
+        const url = URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `CaricoLogistico_View_${new Date().getTime()}.html`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+    } catch (error) {
+        // Fallback di sicurezza: se stai usando l'app offline dal file system locale (file:///) 
+        // e il fetch viene bloccato, esporta nel formato classico .ccn
+        console.warn("Impossibile generare HTML standalone offline. Esportazione JSON fallback.", error);
+        const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `CaricoLogistico_${new Date().getTime()}.ccn`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
 }
 </script>
 </body>
