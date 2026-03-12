@@ -1,0 +1,1227 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cuckoo Box v3.9</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#3b82f6">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        body { 
+            font-family: 'Inter', system-ui, -apple-system, sans-serif; 
+            margin: 0; 
+            background: #0f172a; 
+            color: white; 
+            display: flex; 
+            height: 100vh; 
+            overflow: hidden; 
+        }
+        
+        #sidebar { 
+            width: 360px; 
+            background: #1e293b; 
+            padding: 20px; 
+            border-right: 1px solid #334155; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 12px; 
+            overflow-y: auto; 
+            flex-shrink: 0; 
+            z-index: 100; 
+            transition: 0.3s; 
+        }
+
+        #showSidebarBtn { 
+            display: none; 
+            position: fixed; 
+            top: 15px; 
+            left: 15px; 
+            z-index: 900; 
+            background: #3b82f6; 
+            color: white; 
+            border: none; 
+            padding: 8px 15px; 
+            border-radius: 6px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3); 
+        }
+        
+        #main { 
+            flex-grow: 1; 
+            padding: 20px; 
+            overflow-y: auto; 
+            background: #0f172a; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 20px; 
+            position: relative; 
+        }
+        
+        .card { 
+            background: #1e293b; 
+            border-radius: 8px; 
+            padding: 12px; 
+            border: 1px solid #334155; 
+        }
+
+        label { 
+            font-size: 10px; 
+            color: #94a3b8; 
+            font-weight: 800; 
+            text-transform: uppercase; 
+            margin-bottom: 5px; 
+            display: block; 
+        }
+
+        input[type="number"], input[type="text"], select { 
+            width: 100%; 
+            padding: 8px; 
+            background: #0f172a; 
+            border: 1px solid #334155; 
+            color: white; 
+            border-radius: 4px; 
+            box-sizing: border-box; 
+            margin-bottom: 5px; 
+        }
+
+        input[type="number"]:focus, input[type="text"]:focus, select:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+        button { 
+            cursor: pointer; 
+            padding: 10px; 
+            border: none; 
+            border-radius: 4px; 
+            font-weight: bold; 
+            width: 100%; 
+            transition: 0.2s; 
+            margin-top: 5px; 
+        }
+
+        .btn-primary { background: #3b82f6; color: white; }
+        .btn-success { background: #10b981; color: white; border: 2px solid #059669; }
+        .btn-warning { background: #f59e0b; color: white; }
+        .btn-danger { background: #ef4444; color: white; }
+        .btn-compact { background: #0ea5e9; color: white; border: 1px solid #0284c7; }
+        .btn-ai { background: #8b5cf6; color: white; border: 1px solid #7c3aed; }
+        .btn-dxf { background: #475569; color: white; border: 1px solid #334155; }
+        
+        .btn-primary:hover { background: #2563eb; }
+        .btn-success:hover { background: #059669; }
+        .btn-dxf:hover { background: #334155; }
+
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 10px;
+            margin-bottom: 10px;
+            background: #020617;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #10b981;
+        }
+
+        .checkbox-container input { width: 18px; height: 18px; cursor: pointer; }
+        .checkbox-container label { margin: 0; color: #10b981; font-size: 12px; cursor: pointer; }
+
+        /* MODAL STYLES */
+        .modal-overlay { 
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(15, 23, 42, 0.85); z-index: 10000; justify-content: center; 
+            align-items: center; backdrop-filter: blur(4px); 
+        }
+        .modal-content { 
+            background: #1e293b; border: 1px solid #3b82f6; border-radius: 12px; padding: 25px; 
+            max-width: 1100px; width: 95%; max-height: 90vh; overflow-y: auto; 
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); display: flex; flex-direction: column; gap: 15px; 
+        }
+        .modal-content h2 { margin-top: 0; color: #3b82f6; }
+        #rawTextInput { 
+            width: 100%; height: 70px; background: #0f172a; border: 1px dashed #3b82f6; 
+            color: #cbd5e1; padding: 10px; border-radius: 8px; resize: vertical; 
+            font-family: monospace; box-sizing: border-box;
+        }
+        .map-table-container { width: 100%; overflow-x: auto; max-height: 200px; border: 1px solid #334155; border-radius: 6px; }
+        .map-table { width: 100%; border-collapse: collapse; white-space: nowrap; }
+        .map-table th { background: #0f172a; padding: 5px; text-align: center; position: sticky; top: 0; z-index: 10; border-bottom: 2px solid #3b82f6; }
+        .map-table td { padding: 2px; border-bottom: 1px solid #334155; border-right: 1px dashed #334155; }
+        .map-table input { padding: 6px; margin: 0; font-size: 12px; border: none; background: transparent; color: white; width: 100%; box-sizing: border-box; text-align: center; min-width: 60px; }
+        .map-table input:focus { background: #1e293b; outline: none; }
+        .map-select { font-size: 11px; padding: 4px; background: #1e293b; color: white; border: 1px solid #3b82f6; cursor: pointer; text-align: center; font-weight: bold; width: 110px;}
+        .col-auto-id { background: #020617; color: #10b981; font-weight: bold; pointer-events: none; text-align: center; width: 50px; }
+        .del-btn { background: #ef4444; color: white; padding: 4px 8px; font-size: 10px; border: none; border-radius: 4px; cursor: pointer; white-space: nowrap;}
+        .radio-group label { font-size: 12px; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; color: white; font-weight: normal; margin-right: 8px;}
+
+        /* BOX CARD STYLES */
+        .box-card { background: #ffffff; border-radius: 12px; color: #1e293b; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.2); display: flex; flex-direction: column; margin-bottom: 20px;}
+        .box-header { padding: 10px 20px; background: #f1f5f9; border-bottom: 1px solid #e2e8f0; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
+        .box-body { display: flex; width: 100%; height: 500px; } 
+        
+        .canvas-wrapper { flex: 1.2; position: relative; background: #1e293b; border-right: 1px solid #e2e8f0; overflow: hidden; min-width: 300px; }
+        .canvas-3d-target { width: 100%; height: 100%; }
+        
+        .box-details { flex: 0.8; padding: 15px; background: #f8fafc; overflow-y: auto; font-size: 12px;}
+        
+        .spec-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+        .spec-table th, .spec-table td { border: 1px solid #cbd5e1; padding: 6px 8px; text-align: left; }
+        .spec-table th { background-color: #e2e8f0; }
+
+        .part-card-mini { background: #ffffff; border-left: 3px solid; padding: 6px; margin-bottom: 4px; border-radius: 0 4px 4px 0; border-top: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0;}
+        .part-imb { border-left-color: #3b82f6; }
+        .part-legno { border-left-color: #f59e0b; }
+        .part-rinf { border-left-color: #10b981; }
+
+        #log { font-size: 11px; color: #10b981; font-family: monospace; background: #000; padding: 10px; border-radius: 4px; height: 50px; overflow-y: auto; flex-shrink: 0; margin-top: 10px;}
+
+        .controls-3d {
+            position: absolute; top: 10px; right: 10px; z-index: 10; 
+            background: rgba(15, 23, 42, 0.85); padding: 10px; border-radius: 8px; 
+            display: flex; flex-direction: column; gap: 6px; border: 1px solid #334155;
+            backdrop-filter: blur(4px);
+        }
+        .controls-3d label {
+            color: #cbd5e1; font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 6px;
+            margin: 0; text-transform: none; font-weight: normal;
+        }
+        .controls-3d input[type="checkbox"] { width: 14px; height: 14px; margin: 0; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<button id="showSidebarBtn" onclick="toggleSidebar()">☰ MENU E IMPOSTAZIONI</button>
+
+<div id="importerModal" class="modal-overlay">
+    <div class="modal-content">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h2>🪄 Smart Data Mapper (Validazione)</h2>
+            <button onclick="closeImporter()" style="width: auto; background: none; color: #94a3b8; font-size: 20px; border:none; cursor:pointer;">✖</button>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
+            <div class="card" style="border: 1px dashed #3b82f6;">
+                <label>OPZ. 1: TESTO LIBERO / DA AI</label>
+                <p style="font-size:10px; color:#94a3b8; margin-top:0; height: 25px;">Incolla i dati o la tabella generata da ChatGPT.</p>
+                <textarea id="rawTextInput" placeholder="Incolla qui..."></textarea>
+                <div style="display: flex; gap: 5px;">
+                    <button class="btn-primary" style="width: 50%; padding: 10px 5px; font-size: 11px;" onclick="parseRawText()">ANALIZZA TESTO</button>
+                    <button class="btn-ai" style="width: 50%; padding: 10px 5px; font-size: 11px;" onclick="copyTextWithPromptForAI()">ANALISI AI</button>
+                </div>
+            </div>
+            
+            <div class="card">
+                <label>OPZ. 2: FILE ORDINATO</label>
+                <p style="font-size:10px; color:#94a3b8; margin-top:0; height: 25px;">Carica Excel/CSV leggibili e strutturati.</p>
+                <input type="file" id="fileInp" accept=".xlsx, .xls, .csv">
+                <button class="btn-primary" onclick="parseExcelFile()">LEGGI FILE</button>
+                <select id="sheetSelector" style="display:none; margin-top:10px; border-color: #10b981;" onchange="handleSheetSelection()"></select>
+            </div>
+
+            <div class="card" style="border: 1px dashed #8b5cf6;">
+                <label style="color: #c4b5fd;">OPZ. 3: ISTRUZIONI PER AI</label>
+                <p style="font-size:10px; color:#94a3b8; margin-top:0; height: 25px;">Copia le istruzioni infallibili, incollale nell'AI e allega il file lì.</p>
+                <button class="btn-ai" style="margin-top: 25px;" onclick="copyPromptForAI()">📋 COPIA PROMPT PER AI</button>
+            </div>
+        </div>
+
+        <div id="validationArea" style="display: none; border-top: 1px solid #334155; padding-top: 15px;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 10px;">
+                <div>
+                    <label style="color: #10b981; font-size: 12px;">Mappa le Colonne</label>
+                    <p style="font-size: 11px; margin:0;">Usa "Compatta Righe" per rimuovere intestazioni inutili o righe vuote prima di importare.</p>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <div style="background: #0f172a; padding: 5px 10px; border-radius: 4px; border: 1px solid #3b82f6; display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 10px; color: #3b82f6; font-weight: bold;">UNITÀ DATI:</span>
+                        <div class="radio-group">
+                            <label><input type="radio" name="unitConvert" value="m"> m</label>
+                            <label><input type="radio" name="unitConvert" value="cm" checked> cm</label>
+                            <label><input type="radio" name="unitConvert" value="mm"> mm</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="map-table-container">
+                <table class="map-table" id="valTable">
+                    <thead id="valTableHeader"></thead>
+                    <tbody id="valTableBody"></tbody>
+                </table>
+            </div>
+            
+            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                <button class="btn-warning" onclick="addEmptyRow()">+ AGGIUNGI RIGA</button>
+                <button class="btn-compact" onclick="compactData()">🧹 COMPATTA RIGHE</button>
+                <button class="btn-success" style="margin-left:auto;" onclick="confirmImport()">✅ CONFERMA E GENERA CASSE</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="sidebar">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <h2 style="margin:0; color: #f59e0b; font-size: 1.4em;">Cuckoo Box v3.9</h2>
+        <button onclick="toggleSidebar()" style="background: transparent; color: #94a3b8; border: 1px solid #475569; padding: 4px 8px; width: auto; font-size: 10px;">◀ NASCONDI</button>
+    </div>
+
+    <div class="card" style="border-left: 4px solid #3b82f6;">
+        <label style="color: #60a5fa;">Aggiungi Cassa Singola (Misure Interne in CM)</label>
+        <div class="grid-3">
+            <div>
+                <input type="number" id="manL" value="100">
+                <div style="font-size: 9px; color: #64748b; text-align: center;">L (cm)</div>
+            </div>
+            <div>
+                <input type="number" id="manP" value="80">
+                <div style="font-size: 9px; color: #64748b; text-align: center;">P (cm)</div>
+            </div>
+            <div>
+                <input type="number" id="manH" value="60">
+                <div style="font-size: 9px; color: #64748b; text-align: center;">H (cm)</div>
+            </div>
+        </div>
+        <div class="grid-2" style="margin-top: 5px;">
+            <input type="text" id="manID" placeholder="ID (Opzionale)">
+            <button class="btn-primary" style="margin-top: 0; padding: 8px;" onclick="aggiungiCassaManuale()">➕ AGGIUNGI</button>
+        </div>
+    </div>
+
+    <div class="card" style="border-left: 4px solid #8b5cf6;">
+        <label style="color: #a78bfa;">Importa Lista Casse (Excel/Testo)</label>
+        <button class="btn-ai" onclick="openImporter()">🪄 APRI IMPORTATORE DATI</button>
+    </div>
+
+    <div class="card">
+        <label>Impostazioni Pannelli (Spessori in MM)</label>
+        <div class="grid-2">
+            <div>
+                <label style="margin-bottom: 2px;">Spess. Imbottitura (mm)</label>
+                <input type="number" step="1" id="globalImb" value="20" onchange="ricalcolaTutto()">
+            </div>
+            <div>
+                <label style="margin-bottom: 2px;">Spess. Legno (mm)</label>
+                <input type="number" step="1" id="globalLegno" value="18" onchange="ricalcolaTutto()">
+            </div>
+        </div>
+
+        <div class="checkbox-container">
+            <input type="checkbox" id="abilitaRinforzi" onchange="toggleRinforziGlobal()" checked>
+            <label for="abilitaRinforzi">🔨 AGGIUNGI RINFORZI</label>
+        </div>
+        <div id="rinforziInputs" style="margin-top: 5px;">
+            <div class="grid-2">
+                <div>
+                    <label>Larghezza (mm)</label>
+                    <input type="number" step="1" id="larghezzaRinforzi" value="100" onchange="ricalcolaTutto()">
+                </div>
+                <div>
+                    <label>Spessore (mm)</label>
+                    <input type="number" step="1" id="spessoreRinforzi" value="18" onchange="ricalcolaTutto()">
+                </div>
+            </div>
+        </div>
+
+        <label style="margin-top: 10px;">Pannelli Magazzino (Imbottitura)</label>
+        <select id="panelImb">
+            <option value="2000,1000">Etafoam 2000×1000mm</option>
+            <option value="2400,1200">Etafoam 2400×1200mm</option>
+        </select>
+
+        <label style="margin-top: 5px;">Pannelli Magazzino (Legno)</label>
+        <select id="panelLegno">
+            <option value="2500,1500">MF1525 - 2500×1500mm</option>
+            <option value="2440,1220">Pioppo 2440×1220mm (8'×4')</option>
+        </select>
+    </div>
+
+    <div id="log">> In attesa di casse...</div>
+
+    <div style="margin-top: 5px; display: flex; flex-direction: column; gap: 5px;">
+        <button class="btn-danger" style="background: transparent; color: #ef4444; border: 1px solid #ef4444;" onclick="svuotaLista()">🗑️ SVUOTA TUTTO</button>
+        <button class="btn-success" style="border-width: 2px;" onclick="exportToCuckooNest()">🚀 ESPORTA A CUCKOO NEST</button>
+        <button class="btn-primary" onclick="esportaExcel()">📊 EXCEL (Distinta Base Globale)</button>
+        <button class="btn-dxf" onclick="generaDXF('imbottitura')">📥 DXF Nesting Imbottitura</button>
+        <button class="btn-dxf" onclick="generaDXF('legno')">📥 DXF Nesting Legno</button>
+        <button id="btnRinforzi" class="btn-dxf" onclick="generaDXF('rinforzi')">📥 DXF Nesting Rinforzi</button>
+        <button class="btn-ai" onclick="exportToCCB()">📱 ESPORTA PER CUCKOO VIEW (.CCB)</button>
+    </div>
+</div>
+
+<div id="main">
+    <div id="boxes-container" style="display: flex; flex-direction: column; gap: 20px;">
+        <div style="text-align: center; color: #64748b; margin-top: 50px;">
+            <h2>Nessuna cassa presente</h2>
+            <p>Aggiungi una cassa manualmente dalla sidebar o importa un file.</p>
+        </div>
+    </div>
+</div>
+
+<script>
+let itemsMaster = []; 
+let p5Instances = {}; 
+let boxObserver = null; 
+let cassaIdCounter = 1;
+
+let rawDataGrid = [];
+let colMappings = [];
+let currentWorkbook = null; // Memoria per file Excel multi-foglio
+
+const SELECT_OPTIONS = `
+    <option value="ignore">❌ Ignora</option>
+    <option value="id">🆔 ID Cassa</option>
+    <option value="l">↔️ L (Int)</option>
+    <option value="p">↕️ P (Int)</option>
+    <option value="h">⬆️ H (Int)</option>
+    <option value="peso">⚖️ Peso Apparato (KG)</option>
+`;
+
+function writeLog(m, col="#10b981") { 
+    let l = document.getElementById('log'); 
+    l.innerHTML = `<div style="color:${col}; margin-bottom: 3px;">> ${m}</div>` + l.innerHTML; 
+}
+
+function toggleSidebar() {
+    let s = document.getElementById('sidebar');
+    let btn = document.getElementById('showSidebarBtn');
+    if (s.style.display === 'none') {
+        s.style.display = 'flex';
+        btn.style.display = 'none';
+    } else {
+        s.style.display = 'none';
+        btn.style.display = 'block';
+    }
+}
+
+function toggleRinforziGlobal() {
+    const abilitato = document.getElementById('abilitaRinforzi').checked;
+    document.getElementById('rinforziInputs').style.display = abilitato ? 'block' : 'none';
+    
+    itemsMaster.forEach((_, idx) => {
+        let cb = document.getElementById(`show-rin-${idx}`);
+        if(cb) { cb.checked = abilitato; cb.disabled = !abilitato; }
+    });
+    ricalcolaTutto();
+}
+
+function getGlobalSettings() {
+    return {
+        i: parseFloat(document.getElementById('globalImb').value) || 20,
+        legno: parseFloat(document.getElementById('globalLegno').value) || 18,
+        useRinf: document.getElementById('abilitaRinforzi').checked,
+        rW: parseFloat(document.getElementById('larghezzaRinforzi').value) || 100,
+        rSpess: parseFloat(document.getElementById('spessoreRinforzi').value) || 18
+    };
+}
+
+// CORE MATEMATICO
+function calcolaBox(item) {
+    const set = getGlobalSettings();
+    const l = item.L; 
+    const p = item.P;
+    const h = item.H;
+    const i = set.i;
+    const legno = set.legno;
+
+    const lTot = l + 2*i + 2*legno;
+    const pTot = p + 2*i + 2*legno;
+    const hTot = h + 2*i + 2*legno;
+
+    const imb = {
+        base: { l: l + 2*i, p: p + 2*i, nome: 'Base' },
+        coperchio: { l: l + 2*i, p: p + 2*i, nome: 'Coperchio' },
+        fiancoSx: { l: p, h: h, nome: 'Fianco Sx' },
+        fiancoDx: { l: p, h: h, nome: 'Fianco Dx' },
+        fronte: { l: l + 2*i, h: h, nome: 'Fronte' },
+        retro: { l: l + 2*i, h: h, nome: 'Retro' }
+    };
+
+    const pan = {
+        base: { l: lTot, p: pTot, nome: 'Base' },
+        coperchio: { l: lTot, p: pTot, nome: 'Coperchio' },
+        fiancoSx: { l: pTot - 2*legno, h: hTot - 2*legno, nome: 'Fianco Sx' },
+        fiancoDx: { l: pTot - 2*legno, h: hTot - 2*legno, nome: 'Fianco Dx' },
+        fronte: { l: lTot, h: hTot - 2*legno, nome: 'Fronte' },
+        retro: { l: lTot, h: hTot - 2*legno, nome: 'Retro' }
+    };
+
+    let rinf = null;
+    let lExt = lTot; let pExt = pTot; let hExt = hTot;
+
+    if (set.useRinf) {
+        const rW = set.rW;
+        const rSpess = set.rSpess;
+        
+        lExt += 2 * rSpess; 
+        pExt += 2 * rSpess; 
+        hExt += 2 * rSpess; 
+
+        rinf = {
+            baseLunga1: { l: lTot + 2*rSpess, h: rW, nome: 'Base Lunga 1' }, 
+            baseLunga2: { l: lTot + 2*rSpess, h: rW, nome: 'Base Lunga 2' },
+            baseCorta1: { l: pTot + 2*rSpess - 2*rW, h: rW, nome: 'Base Corta 1' }, 
+            baseCorta2: { l: pTot + 2*rSpess - 2*rW, h: rW, nome: 'Base Corta 2' },
+            
+            copLunga1: { l: lTot + 2*rSpess, h: rW, nome: 'Cop. Lunga 1' }, 
+            copLunga2: { l: lTot + 2*rSpess, h: rW, nome: 'Cop. Lunga 2' },
+            copCorta1: { l: pTot + 2*rSpess - 2*rW, h: rW, nome: 'Cop. Corta 1' }, 
+            copCorta2: { l: pTot + 2*rSpess - 2*rW, h: rW, nome: 'Cop. Corta 2' },
+            
+            fiancoSxL1: { l: pTot, h: rW, nome: 'Sx Lunga 1' }, 
+            fiancoSxL2: { l: pTot, h: rW, nome: 'Sx Lunga 2' },
+            fiancoSxC1: { l: hTot - 2*rW, h: rW, nome: 'Sx Corta 1' }, 
+            fiancoSxC2: { l: hTot - 2*rW, h: rW, nome: 'Sx Corta 2' },
+            
+            fiancoDxL1: { l: pTot, h: rW, nome: 'Dx Lunga 1' }, 
+            fiancoDxL2: { l: pTot, h: rW, nome: 'Dx Lunga 2' },
+            fiancoDxC1: { l: hTot - 2*rW, h: rW, nome: 'Dx Corta 1' }, 
+            fiancoDxC2: { l: hTot - 2*rW, h: rW, nome: 'Dx Corta 2' },
+            
+            fronteL1: { l: lTot + 2*rSpess, h: rW, nome: 'Fronte Lunga 1' }, 
+            fronteL2: { l: lTot + 2*rSpess, h: rW, nome: 'Fronte Lunga 2' },
+            fronteC1: { l: hTot - 2*rW, h: rW, nome: 'Fronte Corta 1' }, 
+            fronteC2: { l: hTot - 2*rW, h: rW, nome: 'Fronte Corta 2' },
+            
+            retroL1: { l: lTot + 2*rSpess, h: rW, nome: 'Retro Lunga 1' }, 
+            retroL2: { l: lTot + 2*rSpess, h: rW, nome: 'Retro Lunga 2' },
+            retroC1: { l: hTot - 2*rW, h: rW, nome: 'Retro Corta 1' }, 
+            retroC2: { l: hTot - 2*rW, h: rW, nome: 'Retro Corta 2' }
+        };
+    }
+
+    let volLegno = 0;
+    Object.values(pan).forEach(v => volLegno += (v.l||v.w)/1000 * (v.p||v.h)/1000 * (legno/1000));
+    if(rinf) Object.values(rinf).forEach(v => volLegno += (v.l||v.w)/1000 * (v.p||v.h)/1000 * (set.rSpess/1000));
+    const pesoLegno = volLegno * 420; 
+
+    item.results = {
+        dimensioniFinali: { lTot, pTot, hTot, lExt, pExt, hExt, pesoLegno },
+        imb, pan, rinf
+    };
+}
+
+function ricalcolaTutto() {
+    itemsMaster.forEach(item => calcolaBox(item));
+    renderBoxes();
+}
+
+function aggiungiCassaManuale() {
+    let l_cm = parseFloat(document.getElementById('manL').value) || 100;
+    let p_cm = parseFloat(document.getElementById('manP').value) || 80;
+    let h_cm = parseFloat(document.getElementById('manH').value) || 60;
+    let idStr = document.getElementById('manID').value.trim();
+    if(idStr === "") idStr = `Cassa-${cassaIdCounter++}`;
+
+    let newItem = { id: idStr, L: l_cm * 10, P: p_cm * 10, H: h_cm * 10, pesoApparato: 0 };
+    calcolaBox(newItem);
+    itemsMaster.push(newItem);
+    
+    writeLog(`Cassa ${idStr} aggiunta.`);
+    document.getElementById('manID').value = ""; 
+    renderBoxes();
+}
+
+function svuotaLista() {
+    if(confirm("Vuoi svuotare l'intera lista di produzione?")) {
+        itemsMaster = [];
+        cassaIdCounter = 1;
+        renderBoxes();
+        writeLog("Lista svuotata.", "#ef4444");
+    }
+}
+
+function rimuoviCassa(index) {
+    itemsMaster.splice(index, 1);
+    renderBoxes();
+}
+
+// GESTORE RENDERIZZAZIONE CON OBSERVER PER LIMITI WEBGL
+function renderBoxes() {
+    const container = document.getElementById('boxes-container');
+    
+    if(boxObserver) boxObserver.disconnect();
+    Object.values(p5Instances).forEach(p => { if(p && typeof p.remove === 'function') p.remove(); });
+    p5Instances = {};
+    
+    container.innerHTML = "";
+
+    if(itemsMaster.length === 0) {
+        container.innerHTML = `
+            <div style="text-align: center; color: #64748b; margin-top: 50px;">
+                <h2>Nessuna cassa presente</h2>
+                <p>Aggiungi una cassa manualmente dalla sidebar o importa un file.</p>
+            </div>`;
+        return;
+    }
+
+    itemsMaster.forEach((item, index) => {
+        const card = document.createElement('div');
+        card.className = 'box-card';
+        
+        const dimF = item.results.dimensioniFinali;
+        let pApparato = (item.pesoApparato && item.pesoApparato !== "" && item.pesoApparato != 0) ? `${item.pesoApparato} KG` : "-";
+        let rinfChecked = item.results.rinf ? 'checked' : 'disabled';
+
+        card.innerHTML = `
+            <div class="box-header">
+                <span style="font-size: 16px; color: #3b82f6;">📦 ${item.id}</span>
+                <button onclick="rimuoviCassa(${index})" style="background: none; border: none; color: #ef4444; cursor: pointer; font-size: 14px; font-weight: bold;">✖ RIMUOVI</button>
+            </div>
+            <div class="box-body">
+                <div class="canvas-wrapper">
+                    <div class="controls-3d">
+                        <label><input type="checkbox" id="show-eta-${index}" checked> 🧊 Etafoam</label>
+                        <label><input type="checkbox" id="show-cas-${index}" checked> 🪵 Cassa</label>
+                        <label><input type="checkbox" id="show-rin-${index}" ${rinfChecked}> 🔨 Rinforzi</label>
+                        <div style="border-top:1px solid #475569; margin:2px 0;"></div>
+                        <label style="color:#3b82f6;"><input type="checkbox" id="xray-${index}"> 🩻 Raggi X</label>
+                        <label style="color:#10b981;"><input type="checkbox" id="ortho-${index}"> 📐 Ortogonale</label>
+                    </div>
+                    <div class="canvas-3d-target" data-idx="${index}" id="c3d-${index}"></div>
+                </div>
+                <div class="box-details">
+                    <h3 style="margin-top:0; color:#334155; border-bottom: 2px solid #cbd5e1; padding-bottom:5px;">Specifiche Cassa (CM)</h3>
+                    
+                    <table class="spec-table">
+                        <tr><th>Parametro</th><th>Interne (Vano)</th><th>Esterne (Ingombro Max)</th></tr>
+                        <tr><td>L</td><td><b>${(item.L/10).toFixed(1)} cm</b></td><td>${(dimF.lExt/10).toFixed(1)} cm</td></tr>
+                        <tr><td>P</td><td><b>${(item.P/10).toFixed(1)} cm</b></td><td>${(dimF.pExt/10).toFixed(1)} cm</td></tr>
+                        <tr><td>H</td><td><b>${(item.H/10).toFixed(1)} cm</b></td><td>${(dimF.hExt/10).toFixed(1)} cm</td></tr>
+                    </table>
+
+                    <div style="display:flex; gap:10px; margin-bottom:15px;">
+                        <div style="background:#e2e8f0; padding:8px; border-radius:4px; flex:1; text-align:center;">
+                            <div style="font-size:10px; color:#64748b; text-transform:uppercase;">Peso Legno Cassa</div>
+                            <div style="font-size:14px; font-weight:bold; color:#f59e0b;">${dimF.pesoLegno.toFixed(1)} KG</div>
+                        </div>
+                        <div style="background:#e2e8f0; padding:8px; border-radius:4px; flex:1; text-align:center;">
+                            <div style="font-size:10px; color:#64748b; text-transform:uppercase;">Peso Apparato</div>
+                            <div style="font-size:14px; font-weight:bold; color:#3b82f6;">${pApparato}</div>
+                        </div>
+                    </div>
+
+                    <div style="display:flex; gap: 15px;">
+                        <div style="flex:1;">
+                            <h4 style="color:#3b82f6; margin-bottom:5px; margin-top:0;">🧊 Imbottitura (Tagli in mm)</h4>
+                            ${generaHtmlPezzi(item.results.imb, 'imb')}
+                        </div>
+                        <div style="flex:1;">
+                            <h4 style="color:#f59e0b; margin-bottom:5px; margin-top:0;">🪵 Legno (Tagli in mm)</h4>
+                            ${generaHtmlPezzi(item.results.pan, 'legno')}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        container.appendChild(card);
+    });
+
+    boxObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            let idx = entry.target.dataset.idx;
+            if (entry.isIntersecting) {
+                if (!p5Instances[idx]) {
+                    p5Instances[idx] = new p5(sketch3DBox(itemsMaster[idx], idx), entry.target);
+                }
+            } else {
+                if (p5Instances[idx]) {
+                    p5Instances[idx].remove();
+                    p5Instances[idx] = null;
+                    entry.target.innerHTML = ''; 
+                }
+            }
+        });
+    }, { rootMargin: '300px' }); 
+
+    document.querySelectorAll('.canvas-3d-target').forEach(el => boxObserver.observe(el));
+}
+
+function generaHtmlPezzi(objDict, tipo) {
+    if(!objDict) return "";
+    let html = "";
+    Object.values(objDict).forEach(v => {
+        let l = (v.l || v.w);
+        let p = (v.p || v.h);
+        html += `<div class="part-card-mini part-${tipo}">
+            <div style="font-size:9px; color:#64748b;">${v.nome}</div>
+            <div style="font-weight:bold; color:#1e293b;">${l.toFixed(0)} × ${p.toFixed(0)} mm</div>
+        </div>`;
+    });
+    return html;
+}
+
+// ENGINE 3D
+const sketch3DBox = (item, index) => (p) => {
+    p.setup = () => {
+        let d = p.canvas.parentElement;
+        let w = d.clientWidth > 0 ? d.clientWidth : 400; 
+        let h = d.clientHeight > 0 ? d.clientHeight : 500;
+        p.createCanvas(w, h, p.WEBGL);
+    };
+
+    p.windowResized = () => {
+        let d = p.canvas.parentElement;
+        if(d && d.clientWidth > 0) p.resizeCanvas(d.clientWidth, d.clientHeight);
+    };
+
+    p.draw = () => {
+        p.background('#1e293b');
+        p.orbitControl();
+
+        const dimF = item.results.dimensioniFinali;
+        const set = getGlobalSettings();
+        
+        let l = item.L; let d = item.P; let h = item.H;
+        let lT = dimF.lTot; let pT = dimF.pTot; let hT = dimF.hTot;
+        let i = set.i; let legno = set.legno; 
+        let rW = set.rW; let rSpess = set.rSpess;
+
+        let maxDim = Math.max(dimF.lExt, dimF.pExt, dimF.hExt);
+        let S = 180 / maxDim;
+
+        let cbEta = document.getElementById(`show-eta-${index}`);
+        let cbCas = document.getElementById(`show-cas-${index}`);
+        let cbRin = document.getElementById(`show-rin-${index}`);
+        let cbXray = document.getElementById(`xray-${index}`);
+        let cbOrtho = document.getElementById(`ortho-${index}`);
+
+        let showEta = cbEta ? cbEta.checked : true;
+        let showCas = cbCas ? cbCas.checked : true;
+        let showRin = cbRin ? cbRin.checked : false;
+        let xRay = cbXray ? cbXray.checked : false;
+        let ortho = cbOrtho ? cbOrtho.checked : false;
+
+        if (ortho) p.ortho(-p.width/2, p.width/2, -p.height/2, p.height/2, -5000, 5000);
+        else p.perspective();
+
+        p.rotateX(0.8);
+        p.rotateZ(0.5);
+
+        const drawP = (x, y, z, w, depth, height) => {
+            p.push(); 
+            p.translate(x * S, y * S, z * S); 
+            p.box(w * S, depth * S, height * S); 
+            p.pop();
+        };
+
+        p.strokeWeight(0.5); 
+
+        // ETAFOAM
+        if (showEta) {
+            let alpha = xRay ? 60 : 255;
+            p.fill(240, 240, 240, alpha);
+            p.stroke(0, 0, 0, alpha === 255 ? 200 : 80);
+            drawP(0, 0, -h/2 - i/2, l + 2*i, d + 2*i, i); 
+            drawP(0, 0, h/2 + i/2, l + 2*i, d + 2*i, i); 
+            drawP(0, d/2 + i/2, 0, l + 2*i, i, h); 
+            drawP(0, -d/2 - i/2, 0, l + 2*i, i, h); 
+            drawP(-l/2 - i/2, 0, 0, i, d, h); 
+            drawP(l/2 + i/2, 0, 0, i, d, h); 
+        }
+
+        // CASSA LEGNO
+        if (showCas) {
+            let alpha = xRay ? 60 : 255;
+            p.fill(90, 50, 30, alpha);
+            p.stroke(50, 25, 15, alpha === 255 ? 255 : 100);
+            drawP(0, 0, -h/2 - i - legno/2, lT, pT, legno); 
+            drawP(0, 0, h/2 + i + legno/2, lT, pT, legno); 
+            drawP(0, d/2 + i + legno/2, 0, lT, legno, hT - 2*legno); 
+            drawP(0, -d/2 - i - legno/2, 0, lT, legno, hT - 2*legno); 
+            drawP(-l/2 - i - legno/2, 0, 0, legno, pT - 2*legno, hT - 2*legno); 
+            drawP(l/2 + i + legno/2, 0, 0, legno, pT - 2*legno, hT - 2*legno); 
+        }
+
+        // RINFORZI
+        if (showRin && item.results.rinf) {
+            let alpha = xRay ? 120 : 255;
+            p.fill(220, 170, 110, alpha); 
+            p.stroke(120, 80, 40, alpha === 255 ? 255 : 150);
+
+            for(let zOff of [-hT/2 - rSpess/2, hT/2 + rSpess/2]) {
+                drawP(0, pT/2 + rSpess - rW/2, zOff, lT + 2*rSpess, rW, rSpess); 
+                drawP(0, -pT/2 - rSpess + rW/2, zOff, lT + 2*rSpess, rW, rSpess); 
+                drawP(lT/2 + rSpess - rW/2, 0, zOff, rW, pT + 2*rSpess - 2*rW, rSpess); 
+                drawP(-lT/2 - rSpess + rW/2, 0, zOff, rW, pT + 2*rSpess - 2*rW, rSpess); 
+            }
+            for(let yOff of [pT/2 + rSpess/2, -pT/2 - rSpess/2]) {
+                drawP(0, yOff, hT/2 - rW/2, lT + 2*rSpess, rSpess, rW); 
+                drawP(0, yOff, -hT/2 + rW/2, lT + 2*rSpess, rSpess, rW); 
+                drawP(lT/2 + rSpess - rW/2, yOff, 0, rW, rSpess, hT - 2*rW); 
+                drawP(-lT/2 - rSpess + rW/2, yOff, 0, rW, rSpess, hT - 2*rW); 
+            }
+            for(let xOff of [lT/2 + rSpess/2, -lT/2 - rSpess/2]) {
+                drawP(xOff, 0, hT/2 - rW/2, rSpess, pT, rW); 
+                drawP(xOff, 0, -hT/2 + rW/2, rSpess, pT, rW); 
+                drawP(xOff, pT/2 - rW/2, 0, rSpess, rW, hT - 2*rW); 
+                drawP(xOff, -pT/2 + rW/2, 0, rSpess, rW, hT - 2*rW); 
+            }
+        }
+    };
+};
+
+function exportToCuckooNest() {
+    if (itemsMaster.length === 0) { alert('Nessuna cassa da esportare.'); return; }
+    let exportArr = itemsMaster.map(cassa => {
+        const dim = cassa.results.dimensioniFinali;
+        let pesoVuota = dim.pesoLegno;
+        let pesoPiena = pesoVuota;
+        if(cassa.pesoApparato && !isNaN(parseFloat(cassa.pesoApparato))) {
+            pesoPiena += parseFloat(cassa.pesoApparato);
+        }
+
+        return {
+            "ID": cassa.id,
+            "L": parseFloat((dim.lExt / 10).toFixed(1)),
+            "P": parseFloat((dim.pExt / 10).toFixed(1)),
+            "H": parseFloat((dim.hExt / 10).toFixed(1)),
+            "Peso Cassa Vuota": parseFloat(pesoVuota.toFixed(2)),
+            "Peso Cassa Piena": parseFloat(pesoPiena.toFixed(2))
+        };
+    });
+
+    try {
+        const ws = XLSX.utils.json_to_sheet(exportArr); 
+        const wb = XLSX.utils.book_new(); 
+        XLSX.utils.book_append_sheet(wb, ws, "Cuckoo_Import");
+        XLSX.writeFile(wb, `Export_CuckooNest_${itemsMaster.length}Casse.xlsx`);
+        alert(`✅ File generato in CM. Le misure riflettono l'ingombro esterno massimo.`);
+    } catch (error) { alert('Errore esportazione: ' + error.message); }
+}
+
+function esportaExcel() {
+    if (itemsMaster.length === 0) { alert('Nessuna cassa presente.'); return; }
+    try {
+        const ws1_data = [['ID Cassa', 'L Int. (cm)', 'P Int. (cm)', 'H Int. (cm)', 'L Est. (cm)', 'P Est. (cm)', 'H Est. (cm)', 'Peso Vuota (kg)', 'Peso Piena (kg)']];
+        itemsMaster.forEach(c => {
+            const d = c.results.dimensioniFinali;
+            let pPiena = d.pesoLegno + (parseFloat(c.pesoApparato) || 0);
+            ws1_data.push([c.id, c.L/10, c.P/10, c.H/10, d.lExt/10, d.pExt/10, d.hExt/10, d.pesoLegno.toFixed(2), pPiena.toFixed(2)]);
+        });
+        const allImb = getAggregatedParts('imbottitura');
+        const ws2_data = [['Pezzo (ID Cassa - Nome)', 'L (mm)', 'P (mm)']];
+        allImb.forEach(v => ws2_data.push([v.nome, (v.l || v.w).toFixed(0), (v.p || v.h).toFixed(0)]));
+        const allLegno = getAggregatedParts('legno');
+        const ws3_data = [['Pezzo (ID Cassa - Nome)', 'L (mm)', 'P (mm)']];
+        allLegno.forEach(v => ws3_data.push([v.nome, (v.l || v.w).toFixed(0), (v.p || v.h).toFixed(0)]));
+
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(ws1_data), 'Lista Casse (CM)');
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(ws2_data), 'Imbottitura (MM)');
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(ws3_data), 'Legno (MM)');
+        XLSX.writeFile(wb, `Distinta_Produzione.xlsx`);
+    } catch (error) { alert('Errore Excel: ' + error.message); }
+}
+
+function openImporter() { document.getElementById('importerModal').style.display = 'flex'; }
+
+function closeImporter() { 
+    document.getElementById('importerModal').style.display = 'none'; 
+    document.getElementById('validationArea').style.display = 'none';
+    document.getElementById('rawTextInput').value = "";
+    document.getElementById('fileInp').value = "";
+    document.getElementById('sheetSelector').style.display = 'none';
+}
+
+// NUOVA LOGICA LETTURA EXCEL MULTI-FOGLIO
+function parseExcelFile() {
+    try {
+        const file = document.getElementById('fileInp').files[0]; 
+        if(!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const data = new Uint8Array(e.target.result); 
+            currentWorkbook = XLSX.read(data, {type: 'array'}); 
+            
+            if(currentWorkbook.SheetNames.length > 1) {
+                // Se ci sono più fogli, mostro il menu a tendina
+                let sheetSel = document.getElementById('sheetSelector');
+                sheetSel.innerHTML = '<option value="">-- Il file ha più fogli: Selezionane uno --</option>';
+                currentWorkbook.SheetNames.forEach(name => {
+                    sheetSel.innerHTML += `<option value="${name}">${name}</option>`;
+                });
+                sheetSel.style.display = 'block';
+                writeLog(`Trovati ${currentWorkbook.SheetNames.length} fogli nel file Excel. Scegline uno dal menu.`, "#3b82f6");
+            } else {
+                // Se c'è un solo foglio, lo estrae subito
+                document.getElementById('sheetSelector').style.display = 'none';
+                processSheetData(currentWorkbook.SheetNames[0]);
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    } catch (e) { 
+        writeLog("Errore Excel.", "#ef4444"); 
+    }
+}
+
+function handleSheetSelection() {
+    let sheetName = document.getElementById('sheetSelector').value;
+    if(sheetName) {
+        processSheetData(sheetName);
+    }
+}
+
+function processSheetData(sheetName) {
+    try {
+        const raw = XLSX.utils.sheet_to_json(currentWorkbook.Sheets[sheetName], {header: 1});
+        
+        rawDataGrid = [];
+        for(let i=0; i<raw.length; i++) {
+            if(raw[i] && Array.isArray(raw[i]) && raw[i].some(cell => cell !== undefined && cell !== null && cell !== "")) {
+                rawDataGrid.push(raw[i].slice(0,10)); 
+            }
+        }
+        
+        if(rawDataGrid.length > 0) {
+            let maxCols = Math.max(...rawDataGrid.map(r => r.length)); 
+            rawDataGrid.forEach(r => { while(r.length < maxCols) r.push(""); });
+            colMappings = []; 
+            writeLog(`Foglio "${sheetName}" importato correttamente.`); 
+            renderMapperTable();
+        } else {
+            writeLog(`Il foglio "${sheetName}" è vuoto.`, "#ef4444");
+        }
+    } catch(e) {
+        writeLog("Errore lettura foglio.", "#ef4444"); 
+    }
+}
+
+function isValidNumber(val) { 
+    if (val === undefined || val === null || val.toString().trim() === "") return false; 
+    return !isNaN(parseFloat(val.toString().replace(/[^\d.,-]/g, '').replace(',', '.'))); 
+}
+
+function compactData() {
+    let idxL = colMappings.indexOf('l'); 
+    let idxP = colMappings.indexOf('p'); 
+    let idxH = colMappings.indexOf('h');
+    
+    if (idxL === -1 && idxP === -1 && idxH === -1) { 
+        alert("Attenzione: Mappa L, P o H nei menu a tendina prima di compattare."); 
+        return; 
+    }
+    
+    for(let r = 0; r < rawDataGrid.length; r++) {
+        for(let c = 0; c < rawDataGrid[r].length; c++) { 
+            let inp = document.getElementById(`cell_${r}_${c}`); 
+            if(inp) rawDataGrid[r][c] = inp.value; 
+        } 
+    } 
+    
+    let orig = rawDataGrid.length;
+    rawDataGrid = rawDataGrid.filter(row => {
+        let LValid = idxL !== -1 && isValidNumber(row[idxL]);
+        let PValid = idxP !== -1 && isValidNumber(row[idxP]);
+        let HValid = idxH !== -1 && isValidNumber(row[idxH]);
+        return LValid || PValid || HValid;
+    });
+    
+    renderMapperTable(); 
+    alert(`Compattazione eseguita: eliminate ${orig - rawDataGrid.length} righe.`);
+}
+
+function renderMapperTable() {
+    try {
+        let header = document.getElementById('valTableHeader'); 
+        let tbody = document.getElementById('valTableBody');
+        header.innerHTML = ''; 
+        tbody.innerHTML = '';
+        
+        if(rawDataGrid.length === 0) return;
+        
+        let trHead = document.createElement('tr'); 
+        trHead.innerHTML = `<th>⚙️ Auto-ID</th>`;
+        let numCols = rawDataGrid[0].length;
+        
+        if(colMappings.length !== numCols) colMappings = new Array(numCols).fill('ignore'); 
+
+        if (colMappings.every(m => m === 'ignore')) {
+            let firstRow = rawDataGrid[0].map(c => c ? c.toString().toLowerCase().trim() : "");
+            let found = false;
+            for(let c = 0; c < numCols; c++) {
+                let val = firstRow[c]; 
+                if(!val) continue;
+                if (val === 'l' || val.startsWith('lun') || val.startsWith('len') || val === 'x') { colMappings[c] = 'l'; found = true; }
+                else if (val === 'p' || val === 'w' || val.startsWith('prof') || val.startsWith('lar') || val === 'y') { colMappings[c] = 'p'; found = true; }
+                else if (val === 'h' || val.startsWith('alt') || val.startsWith('hei') || val === 'z') { colMappings[c] = 'h'; found = true; }
+                else if (val === 'id' || val.startsWith('nom') || val.startsWith('cas')) { colMappings[c] = 'id'; found = true; }
+                else if (val === 'peso' || val === 'kg' || val.startsWith('pes')) { colMappings[c] = 'peso'; found = true; }
+            }
+            if (!found && numCols >= 3) {
+                let nIdx = 0;
+                for(let c = 0; c < Math.min(numCols, 4); c++) {
+                    if(firstRow[c] !== "" && isNaN(parseFloat(firstRow[c].replace(',','.'))) && !colMappings.includes('id')) {
+                        colMappings[c] = 'id';
+                    } else { 
+                        if(nIdx === 0) colMappings[c] = 'l'; 
+                        else if(nIdx === 1) colMappings[c] = 'p'; 
+                        else if(nIdx === 2) colMappings[c] = 'h'; 
+                        nIdx++; 
+                    }
+                }
+            }
+        }
+
+        for (let c = 0; c < numCols; c++) {
+            let th = document.createElement('th'); 
+            let sel = document.createElement('select'); 
+            sel.className = 'map-select';
+            sel.innerHTML = SELECT_OPTIONS; 
+            sel.value = colMappings[c]; 
+            sel.onchange = (e) => colMappings[c] = e.target.value;
+            th.appendChild(sel); 
+            trHead.appendChild(th);
+        }
+        
+        let thDel = document.createElement('th'); 
+        thDel.innerText = "Azioni"; 
+        trHead.appendChild(thDel); 
+        header.appendChild(trHead);
+
+        rawDataGrid.forEach((row, rIndex) => {
+            let tr = document.createElement('tr');
+            let tdFixed = document.createElement('td'); 
+            tdFixed.innerHTML = `<input class="col-auto-id" value="${String(rIndex + 1).padStart(3, '0')}" readonly>`; 
+            tr.appendChild(tdFixed);
+            
+            for (let c = 0; c < numCols; c++) {
+                let td = document.createElement('td'); 
+                let val = (row[c] !== undefined && row[c] !== null) ? row[c] : "";
+                td.innerHTML = `<input type="text" id="cell_${rIndex}_${c}" value="${val}" onchange="rawDataGrid[${rIndex}][${c}]=this.value">`; 
+                tr.appendChild(td);
+            }
+            
+            let tdDel = document.createElement('td'); 
+            tdDel.innerHTML = `<button class="del-btn" onclick="rawDataGrid.splice(${rIndex}, 1); renderMapperTable();">🗑️</button>`; 
+            tdDel.style.textAlign = "center"; 
+            tr.appendChild(tdDel);
+            
+            tbody.appendChild(tr);
+        });
+        document.getElementById('validationArea').style.display = 'block';
+    } catch(e) { writeLog("Errore rendering tabella.", "#ef4444"); }
+}
+
+function addEmptyRow() { let n = rawDataGrid.length > 0 ? rawDataGrid[0].length : 4; rawDataGrid.push(new Array(n).fill("")); renderMapperTable(); }
+
+function confirmImport() {
+    try {
+        for(let r = 0; r < rawDataGrid.length; r++) {
+            for(let c = 0; c < rawDataGrid[r].length; c++) { 
+                let inp = document.getElementById(`cell_${r}_${c}`); 
+                if(inp) rawDataGrid[r][c] = inp.value; 
+            } 
+        } 
+        
+        let hasL = colMappings.includes('l'); let hasP = colMappings.includes('p'); let hasH = colMappings.includes('h');
+        if(!hasL || !hasP || !hasH) { alert("Mappa L, P e H per continuare!"); return; }
+
+        let unitSelected = document.querySelector('input[name="unitConvert"]:checked').value;
+        let multiplier = unitSelected === 'm' ? 1000 : (unitSelected === 'cm' ? 10 : 1); 
+        
+        let addedCount = 0;
+
+        rawDataGrid.forEach((row, rIndex) => {
+            let generatedAutoId = String(rIndex + 1).padStart(3, '0');
+            let itm = { id: "", L: 0, P: 0, H: 0, pesoApparato: "" }; 
+            
+            for(let c=0; c<colMappings.length; c++) {
+                let map = colMappings[c]; let val = row[c];
+                if(val === undefined || val === null || val.toString().trim() === "") continue;
+                
+                if(map === 'id') itm.id = val.toString().trim();
+                if(map === 'l') { let p = parseFloat(val.toString().replace(/[^\d.,-]/g, '').replace(',','.')); if(!isNaN(p)) itm.L = p * multiplier; }
+                if(map === 'p') { let p = parseFloat(val.toString().replace(/[^\d.,-]/g, '').replace(',','.')); if(!isNaN(p)) itm.P = p * multiplier; }
+                if(map === 'h') { let p = parseFloat(val.toString().replace(/[^\d.,-]/g, '').replace(',','.')); if(!isNaN(p)) itm.H = p * multiplier; }
+                if(map === 'peso') { let p = parseFloat(val.toString().replace(/[^\d.,-]/g, '').replace(',','.')); if(!isNaN(p)) itm.pesoApparato = p; }
+            }
+            if(itm.id === "") itm.id = `Cassa-${generatedAutoId}`;
+            if(itm.L > 0 && itm.P > 0 && itm.H > 0) {
+                calcolaBox(itm); 
+                itemsMaster.push(itm);
+                addedCount++;
+            }
+        });
+        
+        closeImporter(); 
+        writeLog(`Importate e calcolate ${addedCount} casse.`); 
+        renderBoxes();
+    } catch(e) { writeLog("Errore caricamento.", "#ef4444"); }
+}
+
+function copyTextWithPromptForAI() {
+    let rawText = document.getElementById('rawTextInput').value;
+    if(!rawText || rawText.trim() === "") { alert("Incolla prima i dati."); return; }
+    let prompt = `Estrattore dati logistici. Regole:\n1. Trova ID, L, P, H, Peso.\n2. Output CSV (separatore ;) con ### alla fine di ogni riga.\n3. Niente markdown. Prima riga: ID;L;P;H;PESO###\n\nDATI:\n${rawText}`;
+    navigator.clipboard.writeText(prompt).then(() => alert('✅ Prompt copiato. Incollalo su ChatGPT/Gemini.'));
+}
+
+function copyPromptForAI() {
+    let prompt = `Estrattore dati logistici in attesa. Regole per il file futuro:\n1. Trova ID, L, P, H, Peso.\n2. Output CSV (separatore ;) con ### a fine riga.\n3. Niente markdown. Prima riga: ID;L;P;H;PESO###\n\nRispondi solo: "Regole acquisite. In attesa del file."`;
+    navigator.clipboard.writeText(prompt).then(() => alert('✅ Prompt copiato. Incollalo su AI e allega il file.'));
+}
+
+function splitPiece(piece, maxW, maxH, spacing = 18) {
+    const pieces = [];
+    const w = piece.w || piece.l; const h = piece.h || piece.p;
+    if (w + spacing * 2 <= maxW && h + spacing * 2 <= maxH) return [{ ...piece, w, h }];
+    if (h + spacing * 2 <= maxW && w + spacing * 2 <= maxH) return [{ ...piece, w: h, h: w, rotated: true }];
+    const numW = Math.ceil(w / (maxW - spacing * 2)); const numH = Math.ceil(h / (maxH - spacing * 2));
+    let count = 0;
+    const pieceW = Math.floor(w / numW); const pieceH = Math.floor(h / numH);
+    for (let i = 0; i < numW; i++) {
+        for (let j = 0; j < numH; j++) {
+            count++; pieces.push({ ...piece, nome: `${piece.nome} (${count}/${numW*numH})`, w: pieceW, h: pieceH });
+        }
+    }
+    return pieces;
+}
+
+function nesting(pannelli, pianoW, pianoH) {
+    const spacing = 18; 
+    let allPieces = [];
+    pannelli.forEach(p => { allPieces = allPieces.concat(splitPiece(p, pianoW, pianoH, spacing)); });
+    const sorted = allPieces.sort((a, b) => (b.w * b.h) - (a.w * a.h));
+    const allPanels = []; let currentPanel = [];
+    let currentX = spacing; let currentY = spacing; let rowHeight = 0; let panelIndex = 0;
+    for (const pezzo of sorted) {
+        let useW = pezzo.w; let useH = pezzo.h; let rotated = pezzo.rotated || false;
+        if (useW + spacing * 2 > pianoW && useH + spacing * 2 <= pianoW) { let temp = useW; useW = useH; useH = temp; rotated = true; }
+        let placed = false;
+        while (!placed) {
+            if (currentX + useW + spacing <= pianoW && currentY + useH + spacing <= pianoH) {
+                currentPanel.push({ ...pezzo, x: currentX, y: currentY, w: useW, h: useH, rotated, panelIndex });
+                currentX += useW + spacing; rowHeight = Math.max(rowHeight, useH); placed = true;
+            } else {
+                currentY += rowHeight + spacing; currentX = spacing; rowHeight = 0;
+                if (currentY + useH + spacing <= pianoH && currentX + useW + spacing <= pianoW) {
+                    currentPanel.push({ ...pezzo, x: currentX, y: currentY, w: useW, h: useH, rotated, panelIndex });
+                    currentX += useW + spacing; rowHeight = useH; placed = true;
+                } else {
+                    if (currentPanel.length > 0) { allPanels.push([...currentPanel]); panelIndex++; }
+                    currentPanel = []; currentX = spacing; currentY = spacing; rowHeight = 0;
+                }
+            }
+        }
+    }
+    if (currentPanel.length > 0) allPanels.push(currentPanel);
+    return allPanels;
+}
+
+function getAggregatedParts(tipo) {
+    let allParts = [];
+    itemsMaster.forEach(item => {
+        let parts = {};
+        if (tipo === 'imbottitura') parts = item.results.imb;
+        else if (tipo === 'legno') parts = item.results.pan;
+        else if (tipo === 'rinforzi' && item.results.rinf) parts = item.results.rinf;
+        
+        if(parts) {
+            Object.values(parts).forEach(p => {
+                let pCopy = {...p}; pCopy.nome = `[${item.id}] ${pCopy.nome}`; 
+                allParts.push(pCopy);
+            });
+        }
+    });
+    return allParts;
+}
+
+function generaDXF(tipo) {
+    if (itemsMaster.length === 0) { alert('Nessuna cassa presente in lista.'); return; }
+    const pannelli = getAggregatedParts(tipo);
+    if (pannelli.length === 0) { alert('Nessun pannello generato per questo tipo.'); return; }
+
+    const set = getGlobalSettings();
+    let spessore = tipo === 'imbottitura' ? set.i : (tipo === 'rinforzi' ? set.rSpess : set.legno);
+    let layerName = tipo.toUpperCase();
+    let colorCode = tipo === 'imbottitura' ? '5' : (tipo === 'legno' ? '30' : '3');
+    
+    let pianoW = 2500, pianoH = 1500;
+    if(tipo==='imbottitura') { pianoW = 2000; pianoH = 1000; }
+
+    const allPanels = nesting(pannelli, pianoW, pianoH);
+
+    let dxf = `0\nSECTION\n2\nHEADER\n9\n$ACADVER\n1\nAC1015\n9\n$INSUNITS\n70\n4\n0\nENDSEC\n0\nSECTION\n2\nTABLES\n0\nTABLE\n2\nLAYER\n70\n2\n0\nLAYER\n2\n${layerName}\n70\n0\n62\n${colorCode}\n6\nCONTINUOUS\n0\nLAYER\n2\nQUOTE\n70\n0\n62\n7\n6\nCONTINUOUS\n0\nENDTAB\n0\nENDSEC\n0\nSECTION\n2\nENTITIES\n`;
+
+    allPanels.forEach((panel, panelIdx) => {
+        const offsetX = panelIdx * (pianoW + 200);
+        dxf += `0\nLWPOLYLINE\n8\nQUOTE\n90\n5\n70\n1\n10\n${offsetX}\n20\n0\n10\n${offsetX + pianoW}\n20\n0\n10\n${offsetX + pianoW}\n20\n${pianoH}\n10\n${offsetX}\n20\n${pianoH}\n10\n${offsetX}\n20\n0\n`;
+        panel.forEach(p => {
+            const x = offsetX + p.x; const y = p.y; const w = p.w; const h = p.h;
+            dxf += `0\nLWPOLYLINE\n8\n${layerName}\n90\n5\n70\n1\n10\n${x}\n20\n${y}\n10\n${x + w}\n20\n${y}\n10\n${x + w}\n20\n${y + h}\n10\n${x}\n20\n${y + h}\n10\n${x}\n20\n${y}\n0\nTEXT\n8\nQUOTE\n10\n${x + w/2 - 50}\n20\n${y + h/2}\n40\n30\n1\n${p.nome || ''}\n0\nTEXT\n8\nQUOTE\n10\n${x + w/2 - 50}\n20\n${y + h/2 - 40}\n40\n25\n1\n${w.toFixed(0)}x${h.toFixed(0)}mm\n`;
+        });
+        dxf += `0\nTEXT\n8\nQUOTE\n10\n${offsetX + 50}\n20\n${pianoH + 50}\n40\n40\n1\nPannello ${panelIdx + 1} - Spessore: ${spessore} mm\n`;
+    });
+    dxf += `0\nENDSEC\n0\nEOF`;
+
+    const blob = new Blob([dxf], { type: 'application/dxf' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url;
+    a.download = `Nesting_${tipo}.dxf`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+}
+
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => { navigator.serviceWorker.register('./sw.js').catch(()=>{}); });
+}
+
+function exportToCCB() {
+    if (itemsMaster.length === 0) { alert('Nessuna cassa presente.'); return; }
+    
+    let currentSettings = getGlobalSettings();
+
+    // Mappiamo le casse per renderle immediatamente "digeribili" da Cuckoo View.
+    // L'app sul telefono si aspetta di trovare 'res.set' e 'res.dimF' per disegnare la geometria.
+    let casseExport = itemsMaster.map(c => {
+        return {
+            id: c.id,
+            L: c.L,
+            P: c.P,
+            H: c.H,
+            pesoApparato: c.pesoApparato,
+            results: {
+                set: currentSettings, 
+                dimF: c.results.dimensioniFinali, 
+                imb: c.results.imb,
+                pan: c.results.pan,
+                rinf: c.results.rinf
+            }
+        };
+    });
+
+    // Raccogliamo tutti i dati in un unico oggetto JSON
+    const exportData = {
+        type: "CuckooBox",
+        version: "3.9",
+        timestamp: new Date().toISOString(),
+        settings: currentSettings,
+        crates: casseExport
+    };
+
+    const jsonString = JSON.stringify(exportData, null, 2);
+    const blob = new Blob([jsonString], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    // Salva un file con data e ora e estensione .ccb
+    a.download = `Produzione_${new Date().getTime()}.ccb`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+</script>
+</body>
+</html>

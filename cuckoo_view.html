@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Cuckoo View</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0f172a">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+    
+    <style>
+        body { 
+            font-family: 'Inter', system-ui, sans-serif; 
+            margin: 0; 
+            background: #0f172a; 
+            color: white; 
+            display: flex; 
+            flex-direction: column; 
+            height: 100vh; 
+            overflow: hidden; 
+        }
+        
+        .app-header { 
+            background: #020617; 
+            padding: 15px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            border-bottom: 1px solid #334155; 
+            z-index: 10; 
+            flex-shrink: 0;
+        }
+
+        .app-title { 
+            font-size: 18px; 
+            font-weight: 900; 
+            margin: 0; 
+            color: #3b82f6; 
+        }
+
+        .header-buttons { display: flex; gap: 8px; }
+
+        .btn-chiudi { background: #ef4444; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-weight: bold; font-size: 11px; cursor: pointer; display: none; }
+        .btn-share { background: #10b981; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-weight: bold; font-size: 11px; cursor: pointer; display: none; }
+
+        #start-screen {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .upload-btn-wrapper { position: relative; overflow: hidden; display: inline-block; }
+        .btn-massive { border: 2px dashed #3b82f6; color: white; background-color: #1e293b; padding: 30px 40px; border-radius: 16px; font-size: 18px; font-weight: bold; cursor: pointer; }
+        .upload-btn-wrapper input[type=file] { font-size: 100px; position: absolute; left: 0; top: 0; opacity: 0; cursor: pointer; height: 100%; }
+
+        #data-screen {
+            display: none;
+            flex-grow: 1;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .canvas-area {
+            height: 45vh;
+            min-height: 300px;
+            background: #1e293b;
+            position: relative;
+            flex-shrink: 0;
+            border-bottom: 2px solid #334155;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        #canvas-container {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+        }
+        
+        #canvas-container canvas { display: block; outline: none; }
+
+        .overlay-controls {
+            position: absolute;
+            top: 10px; left: 10px; right: 10px;
+            display: flex; justify-content: space-between; align-items: flex-start;
+            pointer-events: none; 
+            z-index: 5;
+        }
+        
+        .control-group {
+            background: rgba(2, 6, 23, 0.85);
+            padding: 10px 15px;
+            border-radius: 8px;
+            pointer-events: auto;
+            backdrop-filter: blur(4px);
+            border: 1px solid #334155;
+            display: flex; flex-direction: column; gap: 5px;
+        }
+
+        select {
+            background: #0f172a; color: white; border: 1px solid #3b82f6;
+            padding: 8px; border-radius: 6px; font-size: 14px; font-weight: bold;
+            width: 100%; cursor: pointer;
+        }
+
+        .slider-container { display: flex; align-items: center; gap: 10px; margin-top: 5px; }
+        input[type=range] { width: 120px; accent-color: #f59e0b; cursor: pointer; }
+
+        .info-area {
+            flex: 1 1 auto; 
+            overflow-y: auto; 
+            -webkit-overflow-scrolling: touch; 
+            background: #0f172a;
+            padding: 15px;
+            min-height: 0; 
+        }
+
+        .info-card {
+            background: #1e293b; border-radius: 8px; padding: 15px; margin-bottom: 15px; border: 1px solid #334155;
+        }
+
+        .info-card h3 { margin-top: 0; margin-bottom: 10px; font-size: 14px; color: #3b82f6; border-bottom: 1px solid #334155; padding-bottom: 5px; }
+        .data-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        .data-table th, .data-table td { padding: 8px; text-align: left; border-bottom: 1px solid #334155; }
+        .data-table th { color: #94a3b8; font-weight: normal; }
+        .data-table td { color: #e2e8f0; font-weight: bold; }
+        .tag { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; }
+        .tag-green { background: #10b981; color: #022c22; }
+        .tag-yellow { background: #f59e0b; color: #451a03; }
+        .tag-blue { background: #3b82f6; color: #1e3a8a; }
+    </style>
+</head>
+<body>
+
+    <div class="app-header">
+        <h1 class="app-title" id="header-title">Cuckoo View</h1>
+        <div class="header-buttons" id="header-buttons">
+            <button class="btn-share" id="share-btn" onclick="exportAndShare()">📤 CONDIVIDI</button>
+            <button class="btn-chiudi" id="btn-close" onclick="resetApp()">✖ CHIUDI</button>
+        </div>
+    </div>
+
+    <div id="start-screen">
+        <div style="margin-bottom: 30px;">
+            <img src="icon-192.png" alt="Logo" style="width: 100px; height: 100px; opacity: 0.8; border-radius: 16px;" onerror="this.style.display='none'">
+            <p style="color: #94a3b8; font-size: 14px; margin-top: 15px;">Il visore intelligente per Produzione e Logistica</p>
+        </div>
+        
+        <div class="upload-btn-wrapper" id="upload-wrapper">
+            <button class="btn-massive">📂 APRI FILE</button>
+            <input type="file" id="fileInp" accept=".ccb, .ccn" onchange="handleFileUpload(event)">
+        </div>
+    </div>
+
+    <div id="data-screen">
+        <div class="canvas-area">
+            <div id="canvas-container"></div>
+            
+            <div class="overlay-controls">
+                
+                <div id="controls-ccb" class="control-group" style="display: none; width: 100%;">
+                    <select id="box-selector" onchange="renderBoxUI()"></select>
+                    <div class="slider-container">
+                        <span style="font-size: 12px; color: #f59e0b; font-weight: bold;">💥 ESPLOSO</span>
+                        <input type="range" id="explode-slider" min="0" max="150" value="0">
+                    </div>
+                </div>
+
+                <div id="controls-ccn" class="control-group" style="display: none; width: 100%;">
+                    <select id="trip-selector" onchange="renderNestUI()"></select>
+                    <label style="font-size: 11px; color: #cbd5e1; display: flex; align-items: center; gap: 5px; margin-top: 5px; cursor: pointer;">
+                        <input type="checkbox" id="ccn-xray"> Raggi-X
+                    </label>
+                </div>
+
+            </div>
+        </div>
+        <div class="info-area" id="info-container"></div>
+    </div>
+
+<script>
+let currentP5 = null;
+let appMode = 'none'; 
+let parsedData = null;
+
+// ==========================================
+// 1. GESTIONE AVVIO E DATI INIETTATI
+// ==========================================
+document.addEventListener("DOMContentLoaded", function() {
+    let uiPanels = document.querySelectorAll('.control-group');
+    uiPanels.forEach(panel => {
+        panel.addEventListener('mousedown', e => e.stopPropagation());
+        panel.addEventListener('touchstart', e => e.stopPropagation(), {passive: false});
+        panel.addEventListener('touchmove', e => e.stopPropagation(), {passive: false});
+        panel.addEventListener('wheel', e => e.stopPropagation());
+    });
+
+    // Controllo se il file ha dati pre-caricati (condiviso via email/whatsapp)
+    let dataTag = document.getElementById('cuckoo-payload-data');
+    if (dataTag && dataTag.textContent.trim().length > 10) {
+        try {
+            // DISTRUZIONE FISICA DELLA SCHERMATA START PER EVITARE ACCAVALLAMENTI
+            let startNode = document.getElementById('start-screen');
+            if(startNode) startNode.remove();
+            
+            let btnNode = document.getElementById('header-buttons');
+            if(btnNode) btnNode.remove();
+
+            let data = JSON.parse(dataTag.textContent);
+            processData(data);
+        } catch(err) {
+            alert("Errore critico: dati corromputi durante il trasferimento.");
+        }
+    }
+});
+
+function resetApp() {
+    if (currentP5) { currentP5.remove(); currentP5 = null; }
+    document.getElementById('canvas-container').innerHTML = ''; 
+    appMode = 'none';
+    parsedData = null;
+    let fileInput = document.getElementById('fileInp');
+    if(fileInput) fileInput.value = "";
+    
+    document.getElementById('start-screen').style.display = 'flex';
+    document.getElementById('data-screen').style.display = 'none';
+    document.getElementById('btn-close').style.display = 'none';
+    document.getElementById('share-btn').style.display = 'none';
+    document.getElementById('header-title').innerText = "Cuckoo View";
+}
+
+function handleFileUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            let data = JSON.parse(e.target.result);
+            processData(data);
+        } catch(err) {
+            alert("File non valido.");
+            resetApp();
+        }
+    };
+    reader.readAsText(file);
+}
+
+function processData(data) {
+    let isBox = (data.type === 'CuckooBox') || (data.crates !== undefined && data.settings !== undefined);
+    let isNest = (data.type === 'CuckooNest') || (data.trips !== undefined) || (data.vehicle !== undefined && data.crates !== undefined);
+
+    let startScreen = document.getElementById('start-screen');
+    if(startScreen) startScreen.style.display = 'none';
+    
+    document.getElementById('data-screen').style.display = 'flex';
+
+    if (!document.getElementById('cuckoo-payload-data')) {
+        document.getElementById('btn-close').style.display = 'block';
+        document.getElementById('share-btn').style.display = 'block';
+    }
+
+    if (isBox) {
+        appMode = 'box';
+        if (data.crates) {
+            data.crates.forEach(c => {
+                if (c.results) {
+                    if (!c.results.dimF && c.results.dimensioniFinali) c.results.dimF = c.results.dimensioniFinali;
+                    if (!c.results.set) c.results.set = data.settings || { i: 20, legno: 18, rW: 100, rSpess: 18 };
+                }
+            });
+        }
+        parsedData = data;
+        document.getElementById('header-title').innerText = "📦 Produzione";
+        document.getElementById('controls-ccb').style.display = 'flex';
+        document.getElementById('controls-ccn').style.display = 'none';
+        initBoxMode();
+    } 
+    else if (isNest) {
+        appMode = 'nest';
+        if (!data.trips && data.crates) {
+            data.trips = []; data.banchina = []; data.globalVehicle = data.vehicle;
+            let tripMap = {};
+            data.crates.forEach(c => {
+                if (c.trip === -1) data.banchina.push(c);
+                else {
+                    if (!tripMap[c.trip]) tripMap[c.trip] = [];
+                    tripMap[c.trip].push(c);
+                }
+            });
+            for (let key in tripMap) data.trips.push({ id: parseInt(key), vehicle: data.vehicle, items: tripMap[key] });
+            data.trips.sort((a, b) => a.id - b.id);
+        }
+        parsedData = data;
+        document.getElementById('header-title').innerText = "🚚 Logistica";
+        document.getElementById('controls-ccb').style.display = 'none';
+        document.getElementById('controls-ccn').style.display = 'flex';
+        initNestMode();
+    }
+}
+
+// ==========================================
+// 2. ESPORTAZIONE HTML PULITA
+// ==========================================
+function exportAndShare() {
+    if(!parsedData) return;
+
+    let fileName = appMode === 'box' ? `Taglio_Cassa_${parsedData.crates[0].id}.html` : `Carico_Logistico.html`;
+
+    // Clona il documento attuale
+    let cloneDoc = document.documentElement.cloneNode(true);
+    
+    // Rimuove la spazzatura dal clone
+    let oldPayload = cloneDoc.querySelector('#cuckoo-payload-data');
+    if(oldPayload) oldPayload.remove();
+
+    let canvasCont = cloneDoc.querySelector('#canvas-container');
+    if(canvasCont) canvasCont.innerHTML = '';
+
+    let infoCont = cloneDoc.querySelector('#info-container');
+    if(infoCont) infoCont.innerHTML = '';
+
+    // Inietta i dati JSON puri
+    let jsonData = JSON.stringify(parsedData).replace(/</g, '\\u003c');
+    let script = document.createElement('script');
+    script.id = 'cuckoo-payload-data';
+    script.type = 'application/json';
+    script.textContent = jsonData;
+    cloneDoc.querySelector('body').appendChild(script);
+
+    let finalHtml = "<!DOCTYPE html>\n<html lang=\"it\">\n" + cloneDoc.outerHTML + "\n</html>";
+    let blob = new Blob([finalHtml], {type: "text/html"});
+    let file = new File([blob], fileName, {type: "text/html"});
+
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        navigator.share({
+            title: 'Visualizzatore Cuckoo',
+            text: 'Ecco il modello 3D. Aprilo con Chrome per visualizzarlo correttamente.',
+            files: [file]
+        }).catch(err => triggerDownload(blob, fileName));
+    } else {
+        triggerDownload(blob, fileName);
+    }
+}
+
+function triggerDownload(blob, fileName) {
+    let url = URL.createObjectURL(blob);
+    let a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+}
+
+// ==========================================
+// 3. LANCIO 3D SICURO (Anti-Bug Mobile)
+// ==========================================
+function safeStartP5(sketchFunc) {
+    let container = document.getElementById('canvas-container');
+    container.innerHTML = '';
+    if (currentP5) { currentP5.remove(); currentP5 = null; }
+
+    // Aspetta che il browser assegni una larghezza reale al div (evita il bug canvas 0x0)
+    let checkSize = setInterval(() => {
+        if (container.clientWidth > 0 && container.clientHeight > 0) {
+            clearInterval(checkSize);
+            currentP5 = new p5(sketchFunc, 'canvas-container');
+        }
+    }, 50);
+}
+
+function initBoxMode() {
+    let sel = document.getElementById('box-selector');
+    sel.innerHTML = "";
+    if (parsedData.crates && parsedData.crates.length > 0) {
+        parsedData.crates.forEach((c, idx) => { sel.innerHTML += `<option value="${idx}">Cassa: ${c.id}</option>`; });
+    }
+    renderBoxUI();
+    safeStartP5(sketchBox);
+}
+
+function initNestMode() {
+    let sel = document.getElementById('trip-selector');
+    sel.innerHTML = "";
+    if (parsedData.trips && parsedData.trips.length > 0) {
+        parsedData.trips.forEach((t, idx) => { sel.innerHTML += `<option value="${idx}">Viaggio #${idx + 1}</option>`; });
+    }
+    renderNestUI();
+    safeStartP5(sketchNest);
+}
+
+// ==========================================
+// 4. RENDERING UI
+// ==========================================
+function generateTableRows(dict) {
+    if (!dict) return "<tr><td>Nessun dato</td></tr>";
+    let rows = "";
+    Object.values(dict).forEach(v => {
+        let l = v.l || v.w || 0; let p = v.p || v.h || 0;
+        rows += `<tr><th>${v.nome}</th><td>${l.toFixed(0)} × ${p.toFixed(0)}</td></tr>`;
+    });
+    return rows;
+}
+
+function renderBoxUI() {
+    let idx = document.getElementById('box-selector').value || 0;
+    if (!parsedData.crates || parsedData.crates.length === 0) return;
+
+    let crate = parsedData.crates[idx];
+    let dimF = crate.results.dimF;
+    let pesoLegno = dimF.pesoLegno ? dimF.pesoLegno.toFixed(1) : "N/D";
+
+    let html = `
+        <div class="info-card">
+            <h3>📏 Specifiche Cassa (${crate.id})</h3>
+            <table class="data-table">
+                <tr><th>Interne (Vano)</th><td>L ${crate.L/10} x P ${crate.P/10} x H ${crate.H/10} cm</td></tr>
+                <tr><th>Ingombro Esterno</th><td>L ${(dimF.lExt/10).toFixed(1)} x P ${(dimF.pExt/10).toFixed(1)} x H ${(dimF.hExt/10).toFixed(1)} cm</td></tr>
+                <tr><th>Peso Legno Cassa</th><td style="color:#f59e0b;">${pesoLegno} KG</td></tr>
+            </table>
+        </div>
+        <div class="info-card"><h3 style="color:#f59e0b;">🪵 Tagli Legno (mm)</h3><table class="data-table">${generateTableRows(crate.results.pan)}</table></div>
+        <div class="info-card"><h3 style="color:#3b82f6;">🧊 Tagli Imbottitura (mm)</h3><table class="data-table">${generateTableRows(crate.results.imb)}</table></div>
+    `;
+    if (crate.results.rinf) html += `<div class="info-card"><h3 style="color:#10b981;">🔨 Tagli Rinforzi (mm)</h3><table class="data-table">${generateTableRows(crate.results.rinf)}</table></div>`;
+
+    document.getElementById('info-container').innerHTML = html;
+}
+
+function renderNestUI() {
+    let html = "";
+    let idx = document.getElementById('trip-selector').value || 0;
+    let trip = parsedData.trips && parsedData.trips.length > 0 ? parsedData.trips[idx] : null;
+
+    if (trip) {
+        let veh = trip.vehicle || parsedData.globalVehicle;
+        html += `<div class="info-card"><h3>🚚 Dati Viaggio #${parseInt(idx)+1}</h3>
+            <table class="data-table"><tr><th>Vano Utilizzato</th><td>${veh.L} x ${veh.P} x ${veh.H} cm</td></tr>
+            <tr><th>Casse Caricate</th><td>${trip.items.filter(i => !i.isEntity).length}</td></tr></table></div>`;
+        
+        let reali = trip.items.filter(i => !i.isEntity);
+        if (reali.length > 0) {
+            html += `<div class="info-card"><h3>📋 Distinta di Carico</h3><table class="data-table">`;
+            reali.forEach(i => {
+                let label = i.isChild ? `<span class="tag tag-green">IMPILATA</span>` : (i.isFlipped ? `<span class="tag tag-yellow">RIBALTATA</span>` : '');
+                let pesoStr = i.peso ? `| ${i.peso}KG` : '';
+                html += `<tr><td>${i.id} <br> <span style="font-weight:normal; font-size:10px; color:#94a3b8;">${i.L}x${i.P}x${i.H} ${pesoStr}</span></td><td style="text-align:right;">${label}</td></tr>`;
+            });
+            html += `</table></div>`;
+        }
+    }
+    document.getElementById('info-container').innerHTML = html || "<p style='color:#94a3b8; padding: 20px;'>Nessun dato.</p>";
+}
+
+// ==========================================
+// 5. MOTORI 3D
+// ==========================================
+const sketchBox = function(p) {
+    p.setup = function() {
+        let d = document.getElementById('canvas-container');
+        p.createCanvas(d.clientWidth, d.clientHeight, p.WEBGL);
+    };
+
+    p.windowResized = function() {
+        let d = document.getElementById('canvas-container');
+        if (d && d.clientWidth > 0) p.resizeCanvas(d.clientWidth, d.clientHeight);
+    };
+
+    p.draw = function() {
+        p.background('#1e293b');
+        p.orbitControl(1, 1, 0.1); 
+
+        if (!parsedData || appMode !== 'box') return;
+
+        let idx = document.getElementById('box-selector').value || 0;
+        let item = parsedData.crates[idx];
+        if (!item || !item.results || !item.results.dimF || !item.results.set) return;
+
+        let dimF = item.results.dimF;
+        let set = item.results.set;
+        let l = item.L, d = item.P, h = item.H;
+        let lT = dimF.lTot, pT = dimF.pTot, hT = dimF.hTot;
+        let i = set.i, legno = set.legno, rW = set.rW, rSpess = set.rSpess;
+
+        let maxDim = Math.max(dimF.lExt, dimF.pExt, dimF.hExt);
+        let S = (p.width < 400 ? 120 : 180) / maxDim; 
+        let ex = parseFloat(document.getElementById('explode-slider').value) || 0;
+
+        p.perspective(); p.rotateX(0.8); p.rotateZ(0.5); p.strokeWeight(1);
+
+        const drawP = function(x, y, z, w, depth, height, dirX, dirY, dirZ, colorArr, isGlass=false, labelStr="") {
+            p.push(); 
+            p.translate((x + dirX*ex)*S, (y + dirY*ex)*S, (z + dirZ*ex)*S); 
+            
+            if (isGlass) { p.fill(240, 240, 240, 60); p.stroke(0, 0, 0, 80); } 
+            else { p.fill(colorArr[0], colorArr[1], colorArr[2]); p.stroke(50, 25, 15); }
+            
+            p.box(w * S, depth * S, height * S); 
+
+            if (labelStr !== "" && ex > 0.2) {
+                p.push(); p.fill(isGlass ? 30 : 255); p.noStroke(); p.textSize(Math.max(12, 35 * S)); p.textAlign(p.CENTER, p.CENTER);
+                let zOffset = 0;
+                if (height <= w && height <= depth) { 
+                    zOffset = (height * S) / 2 + 0.1; p.translate(0, 0, dirZ > 0 ? zOffset : -zOffset); if (dirZ < 0) p.rotateX(p.PI);
+                } else if (depth <= w && depth <= height) { 
+                    zOffset = (depth * S) / 2 + 0.1; p.translate(0, dirY > 0 ? zOffset : -zOffset, 0); p.rotateX(p.HALF_PI); if (dirY < 0) p.rotateY(p.PI);
+                } else { 
+                    zOffset = (w * S) / 2 + 0.1; p.translate(dirX > 0 ? zOffset : -zOffset, 0, 0); if (dirX > 0) p.rotateY(p.HALF_PI); else p.rotateY(-p.HALF_PI);
+                }
+                p.text(labelStr, 0, 0); p.pop();
+            }
+            p.pop();
+        };
+
+        let cEta = [240, 240, 240];
+        drawP(0, 0, -h/2 - i/2, l + 2*i, d + 2*i, i, 0, 0, -1, cEta, true, Math.round(l+2*i)+"x"+Math.round(d+2*i)); 
+        drawP(0, 0, h/2 + i/2, l + 2*i, d + 2*i, i, 0, 0, 1, cEta, true, Math.round(l+2*i)+"x"+Math.round(d+2*i)); 
+        drawP(0, d/2 + i/2, 0, l + 2*i, i, h, 0, 1, 0, cEta, true, Math.round(l+2*i)+"x"+Math.round(h)); 
+        drawP(0, -d/2 - i/2, 0, l + 2*i, i, h, 0, -1, 0, cEta, true, Math.round(l+2*i)+"x"+Math.round(h)); 
+        drawP(-l/2 - i/2, 0, 0, i, d, h, -1, 0, 0, cEta, true, Math.round(d)+"x"+Math.round(h)); 
+        drawP(l/2 + i/2, 0, 0, i, d, h, 1, 0, 0, cEta, true, Math.round(d)+"x"+Math.round(h)); 
+
+        let cLegno = [90, 50, 30];
+        drawP(0, 0, -h/2 - i - legno/2, lT, pT, legno, 0, 0, -1.5, cLegno, false, Math.round(lT)+"x"+Math.round(pT)); 
+        drawP(0, 0, h/2 + i + legno/2, lT, pT, legno, 0, 0, 1.5, cLegno, false, Math.round(lT)+"x"+Math.round(pT)); 
+        drawP(0, d/2 + i + legno/2, 0, lT, legno, hT - 2*legno, 0, 1.5, 0, cLegno, false, Math.round(lT)+"x"+Math.round(hT-2*legno)); 
+        drawP(0, -d/2 - i - legno/2, 0, lT, legno, hT - 2*legno, 0, -1.5, 0, cLegno, false, Math.round(lT)+"x"+Math.round(hT-2*legno)); 
+        drawP(-l/2 - i - legno/2, 0, 0, legno, pT - 2*legno, hT - 2*legno, -1.5, 0, 0, cLegno, false, Math.round(pT-2*legno)+"x"+Math.round(hT-2*legno)); 
+        drawP(l/2 + i + legno/2, 0, 0, legno, pT - 2*legno, hT - 2*legno, 1.5, 0, 0, cLegno, false, Math.round(pT-2*legno)+"x"+Math.round(hT-2*legno)); 
+
+        if (item.results.rinf) {
+            let cRinf = [220, 170, 110];
+            for (let zOff of [-hT/2 - rSpess/2, hT/2 + rSpess/2]) {
+                let dirZ = zOff < 0 ? -2 : 2;
+                drawP(0, pT/2 + rSpess - rW/2, zOff, lT + 2*rSpess, rW, rSpess, 0, 1, dirZ, cRinf, false, Math.round(lT+2*rSpess)); 
+                drawP(0, -pT/2 - rSpess + rW/2, zOff, lT + 2*rSpess, rW, rSpess, 0, -1, dirZ, cRinf, false, Math.round(lT+2*rSpess)); 
+                drawP(lT/2 + rSpess - rW/2, 0, zOff, rW, pT + 2*rSpess - 2*rW, rSpess, 1, 0, dirZ, cRinf, false, Math.round(pT+2*rSpess-2*rW)); 
+                drawP(-lT/2 - rSpess + rW/2, 0, zOff, rW, pT + 2*rSpess - 2*rW, rSpess, -1, 0, dirZ, cRinf, false, Math.round(pT+2*rSpess-2*rW)); 
+            }
+            for (let yOff of [pT/2 + rSpess/2, -pT/2 - rSpess/2]) {
+                let dirY = yOff < 0 ? -2 : 2;
+                drawP(0, yOff, hT/2 - rW/2, lT + 2*rSpess, rSpess, rW, 0, dirY, 1, cRinf, false, Math.round(lT+2*rSpess)); 
+                drawP(0, yOff, -hT/2 + rW/2, lT + 2*rSpess, rSpess, rW, 0, dirY, -1, cRinf, false, Math.round(lT+2*rSpess)); 
+                drawP(lT/2 + rSpess - rW/2, yOff, 0, rW, rSpess, hT - 2*rW, 1, dirY, 0, cRinf, false, Math.round(hT-2*rW)); 
+                drawP(-lT/2 - rSpess + rW/2, yOff, 0, rW, rSpess, hT - 2*rW, -1, dirY, 0, cRinf, false, Math.round(hT-2*rW)); 
+            }
+            for (let xOff of [lT/2 + rSpess/2, -lT/2 - rSpess/2]) {
+                let dirX = xOff < 0 ? -2 : 2;
+                drawP(xOff, 0, hT/2 - rW/2, rSpess, pT, rW, dirX, 0, 1, cRinf, false, Math.round(pT)); 
+                drawP(xOff, 0, -hT/2 + rW/2, rSpess, pT, rW, dirX, 0, -1, cRinf, false, Math.round(pT)); 
+                drawP(xOff, pT/2 - rW/2, 0, rSpess, rW, hT - 2*rW, dirX, 1, 0, cRinf, false, Math.round(hT-2*rW)); 
+                drawP(xOff, -pT/2 + rW/2, 0, rSpess, rW, hT - 2*rW, dirX, -1, 0, cRinf, false, Math.round(hT-2*rW)); 
+            }
+        }
+    };
+};
+
+const sketchNest = function(p) {
+    p.setup = function() {
+        let d = document.getElementById('canvas-container');
+        p.createCanvas(d.clientWidth, d.clientHeight, p.WEBGL);
+    };
+    p.windowResized = function() {
+        let d = document.getElementById('canvas-container');
+        if (d && d.clientWidth > 0) p.resizeCanvas(d.clientWidth, d.clientHeight);
+    };
+
+    p.draw = function() {
+        p.background('#1e293b');
+        p.orbitControl(1, 1, 0.1); 
+
+        if (!parsedData || appMode !== 'nest') return;
+
+        let idx = document.getElementById('trip-selector').value || 0;
+        let trip = parsedData.trips ? parsedData.trips[idx] : null;
+        let veh = trip && trip.vehicle ? trip.vehicle : parsedData.globalVehicle;
+        if (!veh) return;
+
+        let bL = veh.L, bP = veh.P;
+        let S = (p.width < 400 ? 120 : 180) / bL;
+
+        p.perspective(); p.rotateX(1.0); p.rotateZ(0.5); p.scale(S);
+        p.fill(200, 220, 240, 150); p.stroke(100); p.box(bP, bL, 2);
+
+        if (!trip || !trip.items) return;
+
+        let xrayCheckbox = document.getElementById('ccn-xray');
+        let alpha = (xrayCheckbox && xrayCheckbox.checked) ? 80 : 255;
+
+        trip.items.forEach(function(i) {
+            p.push();
+            p.translate(i.y + i.P / 2 - bP / 2, i.x + i.L / 2 - bL / 2, i.z + i.H / 2);
+
+            if (i.id === 'UOMO') p.fill(96, 165, 250, alpha);
+            else if (i.isEntity && i.id.startsWith('TP-')) p.fill(239, 68, 68, alpha);
+            else if (i.isFlipped) p.fill(250, 204, 21, alpha);
+            else if (i.z > 0) p.fill(16, 185, 129, alpha);
+            else if (i.manual) p.fill(59, 130, 246, alpha);
+            else p.fill(255, 255, 255, alpha);
+
+            p.stroke(0, alpha); p.box(i.P, i.L, i.H); p.pop();
+        });
+    };
+};
+</script>
+</body>
+</html>
