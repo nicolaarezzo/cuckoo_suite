@@ -587,7 +587,7 @@
             </div>
         </div>
         <div style="display: grid; grid-template-columns: 1fr 1fr 32px; gap: 8px; margin-top: 5px;">
-            <input type="text" id="manID" placeholder="ID (Opzionale)">
+            <input type="number" id="manPeso" placeholder="Peso (KG)">
             <button class="btn-primary" style="margin-top: 0; padding: 8px;" onclick="aggiungiCassaManuale()">➕ AGGIUNGI</button>
             <button id="btnGlobalFlag" style="margin-top: 0; padding: 0; width: 100%; height: 100%; border: 1px solid #cbd5e1; border-radius: 4px; cursor: pointer; background: transparent;" onclick="toggleGlobalBanchinaFlag()" title="Cambia vincolo a tutte le casse in banchina"></button>
         </div>
@@ -781,11 +781,10 @@ function aggiungiCassaManuale() {
     let l_cm = parseFloat(document.getElementById('manL').value) || 100;
     let p_cm = parseFloat(document.getElementById('manP').value) || 80;
     let h_cm = parseFloat(document.getElementById('manH').value) || 60;
-    let idStr = document.getElementById('manID').value.trim();
     
-    if(idStr === "") {
-        idStr = `Cassa-M${cassaIdCounter++}`;
-    }
+    // Nuova logica Peso e ID automatico
+    let pesoStr = document.getElementById('manPeso').value.trim();
+    let idStr = `Cassa-M${cassaIdCounter++}`;
 
     let newItem = { 
         id: idStr, 
@@ -793,7 +792,7 @@ function aggiungiCassaManuale() {
         L: l_cm, 
         P: p_cm, 
         H: h_cm, 
-        peso: "",
+        peso: pesoStr !== "" && !isNaN(parseFloat(pesoStr)) ? parseFloat(pesoStr) : "",
         origL: l_cm, 
         origP: p_cm, 
         origH: h_cm, 
@@ -808,7 +807,7 @@ function aggiungiCassaManuale() {
     
     itemsMaster.push(newItem);
     writeLog(`Cassa ${idStr} aggiunta in Banchina.`);
-    document.getElementById('manID').value = ""; 
+    document.getElementById('manPeso').value = ""; 
     
     renderAll(); 
 }
