@@ -292,7 +292,7 @@
             </div>
         </div>
         <div class="grid-2" style="margin-top: 5px;">
-            <input type="number" id="manPeso" placeholder="Peso Contenuto (KG)">
+            <input type="number" id="manPeso" placeholder="Peso Netto (KG)">
             <button class="btn-primary" style="margin-top: 0; padding: 8px;" onclick="aggiungiCassaManuale()">➕ AGGIUNGI</button>
         </div>
     </div>
@@ -348,13 +348,12 @@
     <div id="log">> In attesa di casse...</div>
 
     <div style="margin-top: 5px; display: flex; flex-direction: column; gap: 5px;">
-        <button class="btn-danger" style="background: transparent; color: #ef4444; border: 1px solid #ef4444;" onclick="svuotaLista()">🗑️ SVUOTA TUTTO</button>
-        <button class="btn-success" style="border-width: 2px;" onclick="exportToCuckooNest()">🚀 ESPORTA A CUCKOO NEST</button>
-        <button class="btn-primary" onclick="esportaExcel()">📊 EXCEL (Distinta Base Globale)</button>
+        <button class="btn-success" style="border-width: 2px;" onclick="exportToCuckooNest()">🚀 INVIA A BANCHINA (Cuckoo Nest)</button>
+        <button class="btn-primary" onclick="esportaExcel()">📊 ESPORTA TABELLA (Dogana)</button>
         <button class="btn-dxf" onclick="generaDXF('imbottitura')">📥 DXF Nesting Imbottitura</button>
         <button class="btn-dxf" onclick="generaDXF('legno')">📥 DXF Nesting Legno</button>
         <button id="btnRinforzi" class="btn-dxf" onclick="generaDXF('rinforzi')">📥 DXF Nesting Rinforzi</button>
-        <button class="btn-ai" onclick="exportToCCB()">📱 ESPORTA PER CUCKOO VIEW (.CCB)</button>
+        <button class="btn-ai" onclick="sendToCuckooView()">📱 INVIA A CUCKOO VIEW</button>
     </div>
 </div>
 
@@ -375,7 +374,7 @@ let cassaIdCounter = 1;
 
 let rawDataGrid = [];
 let colMappings = [];
-let currentWorkbook = null; // Memoria per file Excel multi-foglio
+let currentWorkbook = null; 
 
 const SELECT_OPTIONS = `
     <option value="ignore">❌ Ignora</option>
@@ -383,7 +382,7 @@ const SELECT_OPTIONS = `
     <option value="l">↔️ L (Int)</option>
     <option value="p">↕️ P (Int)</option>
     <option value="h">⬆️ H (Int)</option>
-    <option value="peso">⚖️ Peso Contenuto (KG)</option>
+    <option value="peso">⚖️ Peso Netto (KG)</option>
 `;
 
 function writeLog(m, col="#10b981") { 
@@ -424,7 +423,6 @@ function getGlobalSettings() {
     };
 }
 
-// CORE MATEMATICO
 function calcolaBox(item) {
     const set = getGlobalSettings();
     const l = item.L; 
@@ -525,7 +523,7 @@ function aggiungiCassaManuale() {
 
     let pesoVal = pesoStr !== "" && !isNaN(parseFloat(pesoStr)) ? parseFloat(pesoStr) : 0;
 
-    let newItem = { id: idStr, L: l_cm * 10, P: p_cm * 10, H: h_cm * 10, pesoContenuto: pesoVal };
+    let newItem = { id: idStr, L: l_cm * 10, P: p_cm * 10, H: h_cm * 10, pesoNetto: pesoVal };
     calcolaBox(newItem);
     itemsMaster.push(newItem);
     
@@ -534,21 +532,11 @@ function aggiungiCassaManuale() {
     renderBoxes();
 }
 
-function svuotaLista() {
-    if(confirm("Vuoi svuotare l'intera lista di produzione?")) {
-        itemsMaster = [];
-        cassaIdCounter = 1;
-        renderBoxes();
-        writeLog("Lista svuotata.", "#ef4444");
-    }
-}
-
 function rimuoviCassa(index) {
     itemsMaster.splice(index, 1);
     renderBoxes();
 }
 
-// GESTORE RENDERIZZAZIONE CON OBSERVER PER LIMITI WEBGL
 function renderBoxes() {
     const container = document.getElementById('boxes-container');
     
@@ -572,7 +560,7 @@ function renderBoxes() {
         card.className = 'box-card';
         
         const dimF = item.results.dimensioniFinali;
-        let pContenuto = (item.pesoContenuto && item.pesoContenuto !== "" && item.pesoContenuto != 0) ? `${item.pesoContenuto} KG` : "-";
+        let pNetto = (item.pesoNetto && item.pesoNetto !== "" && item.pesoNetto != 0) ? `${item.pesoNetto} KG` : "-";
         let rinfChecked = item.results.rinf ? 'checked' : 'disabled';
 
         card.innerHTML = `
@@ -604,12 +592,12 @@ function renderBoxes() {
 
                     <div style="display:flex; gap:10px; margin-bottom:15px;">
                         <div style="background:#e2e8f0; padding:8px; border-radius:4px; flex:1; text-align:center;">
-                            <div style="font-size:10px; color:#64748b; text-transform:uppercase;">Peso Legno Cassa</div>
+                            <div style="font-size:10px; color:#64748b; text-transform:uppercase;">Tara (Legno)</div>
                             <div style="font-size:14px; font-weight:bold; color:#f59e0b;">${dimF.pesoLegno.toFixed(1)} KG</div>
                         </div>
                         <div style="background:#e2e8f0; padding:8px; border-radius:4px; flex:1; text-align:center;">
-                            <div style="font-size:10px; color:#64748b; text-transform:uppercase;">Peso Contenuto</div>
-                            <div style="font-size:14px; font-weight:bold; color:#3b82f6;">${pContenuto}</div>
+                            <div style="font-size:10px; color:#64748b; text-transform:uppercase;">Peso Netto (Apparato)</div>
+                            <div style="font-size:14px; font-weight:bold; color:#3b82f6;">${pNetto}</div>
                         </div>
                     </div>
 
@@ -663,7 +651,6 @@ function generaHtmlPezzi(objDict, tipo) {
     return html;
 }
 
-// ENGINE 3D
 const sketch3DBox = (item, index) => (p) => {
     p.setup = () => {
         let d = p.canvas.parentElement;
@@ -719,7 +706,6 @@ const sketch3DBox = (item, index) => (p) => {
 
         p.strokeWeight(0.5); 
 
-        // ETAFOAM
         if (showEta) {
             let alpha = xRay ? 60 : 255;
             p.fill(240, 240, 240, alpha);
@@ -732,7 +718,6 @@ const sketch3DBox = (item, index) => (p) => {
             drawP(l/2 + i/2, 0, 0, i, d, h); 
         }
 
-        // CASSA LEGNO
         if (showCas) {
             let alpha = xRay ? 60 : 255;
             p.fill(90, 50, 30, alpha);
@@ -745,7 +730,6 @@ const sketch3DBox = (item, index) => (p) => {
             drawP(l/2 + i + legno/2, 0, 0, legno, pT - 2*legno, hT - 2*legno); 
         }
 
-        // RINFORZI
         if (showRin && item.results.rinf) {
             let alpha = xRay ? 120 : 255;
             p.fill(220, 170, 110, alpha); 
@@ -775,41 +759,68 @@ const sketch3DBox = (item, index) => (p) => {
 
 function exportToCuckooNest() {
     if (itemsMaster.length === 0) { alert('Nessuna cassa da esportare.'); return; }
-    let exportArr = itemsMaster.map(cassa => {
+    
+    let cassePerNest = itemsMaster.map(cassa => {
         const dim = cassa.results.dimensioniFinali;
         let pesoVuota = dim.pesoLegno;
         let pesoPiena = pesoVuota;
-        if(cassa.pesoContenuto && !isNaN(parseFloat(cassa.pesoContenuto))) {
-            pesoPiena += parseFloat(cassa.pesoContenuto);
+        if(cassa.pesoNetto && !isNaN(parseFloat(cassa.pesoNetto))) {
+            pesoPiena += parseFloat(cassa.pesoNetto);
         }
 
         return {
-            "ID": cassa.id,
-            "L": parseFloat((dim.lExt / 10).toFixed(1)),
-            "P": parseFloat((dim.pExt / 10).toFixed(1)),
-            "H": parseFloat((dim.hExt / 10).toFixed(1)),
-            "Peso Cassa Vuota": parseFloat(pesoVuota.toFixed(2)),
-            "Peso Cassa Piena": parseFloat(pesoPiena.toFixed(2))
+            id: cassa.id,
+            autoId: String(Math.floor(Math.random() * 1000)).padStart(3, '0'), 
+            L: parseFloat((dim.lExt / 10).toFixed(1)),
+            P: parseFloat((dim.pExt / 10).toFixed(1)),
+            H: parseFloat((dim.hExt / 10).toFixed(1)),
+            peso: parseFloat(pesoPiena.toFixed(2)),
+            origL: parseFloat((dim.lExt / 10).toFixed(1)),
+            origP: parseFloat((dim.pExt / 10).toFixed(1)),
+            origH: parseFloat((dim.hExt / 10).toFixed(1)),
+            x: 9999,
+            y: 20,
+            z: 0,
+            trip: -1,
+            manual: false,
+            stackMode: 0,
+            isChild: false,
+            isEntity: false
         };
     });
 
-    try {
-        const ws = XLSX.utils.json_to_sheet(exportArr); 
-        const wb = XLSX.utils.book_new(); 
-        XLSX.utils.book_append_sheet(wb, ws, "Cuckoo_Import");
-        XLSX.writeFile(wb, `Export_CuckooNest_${itemsMaster.length}Casse.xlsx`);
-        alert(`✅ File generato in CM. Le misure riflettono l'ingombro esterno massimo.`);
-    } catch (error) { alert('Errore esportazione: ' + error.message); }
+    let queue = JSON.parse(localStorage.getItem('cuckoo_nest_transfer_queue') || '[]');
+    queue = queue.concat(cassePerNest);
+    localStorage.setItem('cuckoo_nest_transfer_queue', JSON.stringify(queue));
+    
+    alert(`✅ ${cassePerNest.length} casse inviate con successo alla banchina!\nApri Cuckoo Nest dalla barra laterale per visualizzarle.`);
 }
 
 function esportaExcel() {
     if (itemsMaster.length === 0) { alert('Nessuna cassa presente.'); return; }
     try {
-        const ws1_data = [['ID Cassa', 'L Int. (cm)', 'P Int. (cm)', 'H Int. (cm)', 'L Est. (cm)', 'P Est. (cm)', 'H Est. (cm)', 'Peso Vuota (kg)', 'Peso Piena (kg)']];
+        const ws1_data = [['ID Cassa', 'Descrizione', 'Lunghezza (cm)', 'Larghezza (cm)', 'Altezza (cm)', 'Volume (m3)', 'Peso Netto (kg)', 'Tara (kg)', 'Peso Lordo (kg)']];
         itemsMaster.forEach(c => {
             const d = c.results.dimensioniFinali;
-            let pPiena = d.pesoLegno + (parseFloat(c.pesoContenuto) || 0);
-            ws1_data.push([c.id, c.L/10, c.P/10, c.H/10, d.lExt/10, d.pExt/10, d.hExt/10, d.pesoLegno.toFixed(2), pPiena.toFixed(2)]);
+            let l = d.lExt/10;
+            let p = d.pExt/10;
+            let h = d.hExt/10;
+            let vol = (l * p * h) / 1000000;
+            let tara = d.pesoLegno;
+            let netto = parseFloat(c.pesoNetto) || 0;
+            let lordo = tara + netto;
+
+            ws1_data.push([
+                c.id, 
+                'Cassa in legno', 
+                l.toFixed(1), 
+                p.toFixed(1), 
+                h.toFixed(1), 
+                vol.toFixed(3), 
+                netto.toFixed(2), 
+                tara.toFixed(2), 
+                lordo.toFixed(2)
+            ]);
         });
         const allImb = getAggregatedParts('imbottitura');
         const ws2_data = [['Pezzo (ID Cassa - Nome)', 'L (mm)', 'P (mm)']];
@@ -819,15 +830,14 @@ function esportaExcel() {
         allLegno.forEach(v => ws3_data.push([v.nome, (v.l || v.w).toFixed(0), (v.p || v.h).toFixed(0)]));
 
         const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(ws1_data), 'Lista Casse (CM)');
-        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(ws2_data), 'Imbottitura (MM)');
-        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(ws3_data), 'Legno (MM)');
-        XLSX.writeFile(wb, `Distinta_Produzione.xlsx`);
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(ws1_data), 'Packing List');
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(ws2_data), 'Tagli Imbottitura');
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(ws3_data), 'Tagli Legno');
+        XLSX.writeFile(wb, `PackingList_Dogana.xlsx`);
     } catch (error) { alert('Errore Excel: ' + error.message); }
 }
 
 function openImporter() { document.getElementById('importerModal').style.display = 'flex'; }
-
 function closeImporter() { 
     document.getElementById('importerModal').style.display = 'none'; 
     document.getElementById('validationArea').style.display = 'none';
@@ -836,19 +846,16 @@ function closeImporter() {
     document.getElementById('sheetSelector').style.display = 'none';
 }
 
-// NUOVA LOGICA LETTURA EXCEL MULTI-FOGLIO
 function parseExcelFile() {
     try {
         const file = document.getElementById('fileInp').files[0]; 
         if(!file) return;
-        
         const reader = new FileReader();
         reader.onload = (e) => {
             const data = new Uint8Array(e.target.result); 
             currentWorkbook = XLSX.read(data, {type: 'array'}); 
             
             if(currentWorkbook.SheetNames.length > 1) {
-                // Se ci sono più fogli, mostro il menu a tendina
                 let sheetSel = document.getElementById('sheetSelector');
                 sheetSel.innerHTML = '<option value="">-- Il file ha più fogli: Selezionane uno --</option>';
                 currentWorkbook.SheetNames.forEach(name => {
@@ -857,35 +864,28 @@ function parseExcelFile() {
                 sheetSel.style.display = 'block';
                 writeLog(`Trovati ${currentWorkbook.SheetNames.length} fogli nel file Excel. Scegline uno dal menu.`, "#3b82f6");
             } else {
-                // Se c'è un solo foglio, lo estrae subito
                 document.getElementById('sheetSelector').style.display = 'none';
                 processSheetData(currentWorkbook.SheetNames[0]);
             }
         };
         reader.readAsArrayBuffer(file);
-    } catch (e) { 
-        writeLog("Errore Excel.", "#ef4444"); 
-    }
+    } catch (e) { writeLog("Errore Excel.", "#ef4444"); }
 }
 
 function handleSheetSelection() {
     let sheetName = document.getElementById('sheetSelector').value;
-    if(sheetName) {
-        processSheetData(sheetName);
-    }
+    if(sheetName) processSheetData(sheetName);
 }
 
 function processSheetData(sheetName) {
     try {
         const raw = XLSX.utils.sheet_to_json(currentWorkbook.Sheets[sheetName], {header: 1});
-        
         rawDataGrid = [];
         for(let i=0; i<raw.length; i++) {
             if(raw[i] && Array.isArray(raw[i]) && raw[i].some(cell => cell !== undefined && cell !== null && cell !== "")) {
                 rawDataGrid.push(raw[i].slice(0,10)); 
             }
         }
-        
         if(rawDataGrid.length > 0) {
             let maxCols = Math.max(...rawDataGrid.map(r => r.length)); 
             rawDataGrid.forEach(r => { while(r.length < maxCols) r.push(""); });
@@ -895,9 +895,7 @@ function processSheetData(sheetName) {
         } else {
             writeLog(`Il foglio "${sheetName}" è vuoto.`, "#ef4444");
         }
-    } catch(e) {
-        writeLog("Errore lettura foglio.", "#ef4444"); 
-    }
+    } catch(e) { writeLog("Errore lettura foglio.", "#ef4444"); }
 }
 
 function isValidNumber(val) { 
@@ -938,9 +936,7 @@ function renderMapperTable() {
     try {
         let header = document.getElementById('valTableHeader'); 
         let tbody = document.getElementById('valTableBody');
-        header.innerHTML = ''; 
-        tbody.innerHTML = '';
-        
+        header.innerHTML = ''; tbody.innerHTML = '';
         if(rawDataGrid.length === 0) return;
         
         let trHead = document.createElement('tr'); 
@@ -1037,7 +1033,7 @@ function confirmImport() {
 
         rawDataGrid.forEach((row, rIndex) => {
             let generatedAutoId = String(rIndex + 1).padStart(3, '0');
-            let itm = { id: "", L: 0, P: 0, H: 0, pesoContenuto: "" }; 
+            let itm = { id: "", L: 0, P: 0, H: 0, pesoNetto: "" }; 
             
             for(let c=0; c<colMappings.length; c++) {
                 let map = colMappings[c]; let val = row[c];
@@ -1047,7 +1043,7 @@ function confirmImport() {
                 if(map === 'l') { let p = parseFloat(val.toString().replace(/[^\d.,-]/g, '').replace(',','.')); if(!isNaN(p)) itm.L = p * multiplier; }
                 if(map === 'p') { let p = parseFloat(val.toString().replace(/[^\d.,-]/g, '').replace(',','.')); if(!isNaN(p)) itm.P = p * multiplier; }
                 if(map === 'h') { let p = parseFloat(val.toString().replace(/[^\d.,-]/g, '').replace(',','.')); if(!isNaN(p)) itm.H = p * multiplier; }
-                if(map === 'peso') { let p = parseFloat(val.toString().replace(/[^\d.,-]/g, '').replace(',','.')); if(!isNaN(p)) itm.pesoContenuto = p; }
+                if(map === 'peso') { let p = parseFloat(val.toString().replace(/[^\d.,-]/g, '').replace(',','.')); if(!isNaN(p)) itm.pesoNetto = p; }
             }
             if(itm.id === "") itm.id = `Cassa-${generatedAutoId}`;
             if(itm.L > 0 && itm.P > 0 && itm.H > 0) {
@@ -1179,20 +1175,18 @@ if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => { navigator.serviceWorker.register('./sw.js').catch(()=>{}); });
 }
 
-function exportToCCB() {
+function sendToCuckooView() {
     if (itemsMaster.length === 0) { alert('Nessuna cassa presente.'); return; }
     
     let currentSettings = getGlobalSettings();
 
-    // Mappiamo le casse per renderle immediatamente "digeribili" da Cuckoo View.
-    // L'app sul telefono si aspetta di trovare 'res.set' e 'res.dimF' per disegnare la geometria.
     let casseExport = itemsMaster.map(c => {
         return {
             id: c.id,
             L: c.L,
             P: c.P,
             H: c.H,
-            pesoContenuto: c.pesoContenuto,
+            pesoNetto: c.pesoNetto,
             results: {
                 set: currentSettings, 
                 dimF: c.results.dimensioniFinali, 
@@ -1203,7 +1197,6 @@ function exportToCCB() {
         };
     });
 
-    // Raccogliamo tutti i dati in un unico oggetto JSON
     const exportData = {
         type: "CuckooBox",
         version: "3.9",
@@ -1212,18 +1205,8 @@ function exportToCCB() {
         crates: casseExport
     };
 
-    const jsonString = JSON.stringify(exportData, null, 2);
-    const blob = new Blob([jsonString], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    
-    const a = document.createElement('a');
-    a.href = url;
-    // Salva un file con data e ora e estensione .ccb
-    a.download = `Produzione_${new Date().getTime()}.ccb`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    localStorage.setItem('cuckoo_view_transfer_data', JSON.stringify(exportData));
+    alert(`✅ Dati di produzione inviati con successo a Cuckoo View!\nApri l'app dal menu laterale.`);
 }
 </script>
 </body>
