@@ -2274,8 +2274,6 @@ async function exportToCCN() {
     let mP = parseFloat(document.getElementById('mP').value);
     let mH = parseFloat(document.getElementById('mH').value);
 
-    // NON azzeriamo le coordinate. Manteniamo x, y, z e isChild per mostrare 
-    // l'incastro esatto nel modello 3D del visore mobile.
     const exportData = {
         type: "CuckooNest",
         version: "14.27",
@@ -2288,20 +2286,21 @@ async function exportToCCN() {
     const jsonString = JSON.stringify(exportData).replace(/</g, '\\u003c');
 
     try {
-        // Recupera il codice aggiornato del visualizzatore dalla stessa cartella
         const response = await fetch('cuckoo_view.html');
         if (!response.ok) throw new Error("Cuckoo View non trovato");
         
         let ccvHtml = await response.text();
 
-        // Rimuove eventuali dati payload esistenti se si sta leggendo un file già elaborato
-        ccvHtml = ccvHtml.replace(/<script id="cuckoo-payload-data" type="application\/json">.*?<\/script>/s, '');
+        // Spezziamo i tag script per non far bloccare la lettura al browser
+        let startTag = '<script id="cuckoo-payload-data" type="application/json">';
+        let endTag = '</' + 'script>';
+        
+        let regex = new RegExp('<script id="cuckoo-payload-data" type="application/json">.*?</' + 'script>', 's');
+        ccvHtml = ccvHtml.replace(regex, '');
 
-        // Inietta i dati JSON puri prima della chiusura del body
-        let scriptTag = `<script id="cuckoo-payload-data" type="application/json">${jsonString}</script>`;
+        let scriptTag = startTag + jsonString + endTag;
         ccvHtml = ccvHtml.replace('</body>', scriptTag + '\n</body>');
 
-        // Genera il file HTML standalone per il browser mobile
         const blob = new Blob([ccvHtml], { type: "text/html" });
         const url = URL.createObjectURL(blob);
         
@@ -2314,8 +2313,6 @@ async function exportToCCN() {
         URL.revokeObjectURL(url);
 
     } catch (error) {
-        // Fallback di sicurezza: se stai usando l'app offline dal file system locale (file:///) 
-        // e il fetch viene bloccato, esporta nel formato classico .ccn
         console.warn("Impossibile generare HTML standalone offline. Esportazione JSON fallback.", error);
         const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
         const url = URL.createObjectURL(blob);
