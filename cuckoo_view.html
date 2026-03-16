@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Cuckoo View</title>
+    <title>Cuckoo View - Project Hub</title>
     
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0f172a">
-    <link rel="apple-touch-icon" href="icon-192.png">
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     
     <style>
         body { 
@@ -25,7 +25,7 @@
         
         .app-header { 
             background: #020617; 
-            padding: 15px; 
+            padding: 10px 15px; 
             display: flex; 
             justify-content: space-between; 
             align-items: center; 
@@ -34,581 +34,763 @@
             flex-shrink: 0;
         }
 
-        .app-title { 
-            font-size: 18px; 
-            font-weight: 900; 
-            margin: 0; 
-            color: #3b82f6; 
-        }
+        .app-title { font-size: 16px; font-weight: 900; margin: 0; color: #3b82f6; }
 
         .header-buttons { display: flex; gap: 8px; }
+        .btn { padding: 8px 12px; border-radius: 6px; font-weight: bold; font-size: 11px; cursor: pointer; border: none; color: white; }
+        .btn-load { background: #334155; border: 1px solid #475569; }
+        .btn-share { background: #3b82f6; }
+        .btn-restore { background: #f59e0b; display: none; }
+        .btn-excel { background: #10b981; }
+        .btn-whatsapp { background: #25D366; color: white; margin-top: 10px; width: 100%; padding: 10px; font-size: 12px; }
 
-        .btn-chiudi { background: #ef4444; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-weight: bold; font-size: 11px; cursor: pointer; display: none; }
-        .btn-share { background: #10b981; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-weight: bold; font-size: 11px; cursor: pointer; display: none; }
-
-        #start-screen {
-            flex-grow: 1;
+        /* TABS NAVIGAZIONE */
+        .tabs-container {
             display: flex;
-            flex-direction: column;
+            background: #1e293b;
+            border-bottom: 2px solid #334155;
+            flex-shrink: 0;
+        }
+        .tab-btn {
+            flex: 1;
+            padding: 12px 5px;
+            background: transparent;
+            border: none;
+            color: #64748b;
+            font-size: 11px;
+            font-weight: bold;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: 0.2s;
+            display: flex;
             align-items: center;
             justify-content: center;
-            padding: 20px;
-            text-align: center;
+            gap: 5px;
         }
-        
-        .upload-btn-wrapper { position: relative; overflow: hidden; display: inline-block; }
-        .btn-massive { border: 2px dashed #3b82f6; color: white; background-color: #1e293b; padding: 30px 40px; border-radius: 16px; font-size: 18px; font-weight: bold; cursor: pointer; }
-        .upload-btn-wrapper input[type=file] { font-size: 100px; position: absolute; left: 0; top: 0; opacity: 0; cursor: pointer; height: 100%; }
+        .tab-btn.active { color: #3b82f6; border-bottom-color: #3b82f6; background: #0f172a; }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #ef4444; }
+        .status-dot.on { background: #10b981; box-shadow: 0 0 5px #10b981; }
 
-        #data-screen {
+        /* AREE CONTENUTO */
+        .module-screen {
             display: none;
             flex-grow: 1;
             flex-direction: column;
             overflow: hidden;
         }
+        .module-screen.active { display: flex; }
 
+        .empty-state {
+            flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            color: #64748b; text-align: center; padding: 20px;
+        }
+
+        /* 3D E LISTE */
         .canvas-area {
-            height: 45vh;
-            min-height: 300px;
-            background: #1e293b;
-            position: relative;
-            flex-shrink: 0;
-            border-bottom: 2px solid #334155;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            height: 45vh; min-height: 250px; background: #1e293b; position: relative; flex-shrink: 0; border-bottom: 2px solid #334155;
         }
+        #canvas-container-ccb, #canvas-container-ccn { width: 100%; height: 100%; position: absolute; top:0; left:0; }
         
-        #canvas-container {
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-        }
-        
-        #canvas-container canvas { display: block; outline: none; }
-
         .overlay-controls {
-            position: absolute;
-            top: 10px; left: 10px; right: 10px;
-            display: flex; justify-content: space-between; align-items: flex-start;
-            pointer-events: none; 
-            z-index: 5;
+            position: absolute; top: 10px; left: 10px; right: 10px; display: flex; justify-content: space-between; align-items: flex-start; pointer-events: none; z-index: 5;
         }
-        
         .control-group {
-            background: rgba(2, 6, 23, 0.85);
-            padding: 10px 15px;
-            border-radius: 8px;
-            pointer-events: auto;
-            backdrop-filter: blur(4px);
-            border: 1px solid #334155;
-            display: flex; flex-direction: column; gap: 5px;
+            background: rgba(2, 6, 23, 0.85); padding: 8px; border-radius: 8px; pointer-events: auto; border: 1px solid #334155; display: flex; flex-direction: column; gap: 5px; width: 100%; max-width: 250px;
         }
-
-        select {
-            background: #0f172a; color: white; border: 1px solid #3b82f6;
-            padding: 8px; border-radius: 6px; font-size: 14px; font-weight: bold;
-            width: 100%; cursor: pointer;
-        }
-
-        .slider-container { display: flex; align-items: center; gap: 10px; margin-top: 5px; }
-        input[type=range] { width: 120px; accent-color: #f59e0b; cursor: pointer; }
-
+        select, input[type=range] { width: 100%; background: #0f172a; color: white; border: 1px solid #3b82f6; padding: 6px; border-radius: 4px; font-size: 12px; }
+        
         .info-area {
-            flex: 1 1 auto; 
-            overflow-y: auto; 
-            -webkit-overflow-scrolling: touch; 
-            background: #0f172a;
-            padding: 15px;
-            min-height: 0; 
+            flex-grow: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; background: #0f172a; padding: 15px; min-height: 0; padding-bottom: 50px;
         }
-
-        .info-card {
-            background: #1e293b; border-radius: 8px; padding: 15px; margin-bottom: 15px; border: 1px solid #334155;
-        }
-
-        .info-card h3 { margin-top: 0; margin-bottom: 10px; font-size: 14px; color: #3b82f6; border-bottom: 1px solid #334155; padding-bottom: 5px; }
-        .data-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-        .data-table th, .data-table td { padding: 8px; text-align: left; border-bottom: 1px solid #334155; }
+        .info-card { background: #1e293b; border-radius: 8px; padding: 15px; margin-bottom: 15px; border: 1px solid #334155; }
+        .info-card h3 { margin-top: 0; font-size: 13px; color: #3b82f6; border-bottom: 1px solid #334155; padding-bottom: 5px; display: flex; justify-content: space-between; align-items: center;}
+        
+        .data-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+        .data-table th, .data-table td { padding: 6px; text-align: left; border-bottom: 1px solid #334155; }
         .data-table th { color: #94a3b8; font-weight: normal; }
-        .data-table td { color: #e2e8f0; font-weight: bold; }
-        .tag { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; }
-        .tag-green { background: #10b981; color: #022c22; }
-        .tag-yellow { background: #f59e0b; color: #451a03; }
-        .tag-blue { background: #3b82f6; color: #1e3a8a; }
+
+        /* CCE Table */
+        .cce-table { width: 100%; border-collapse: collapse; font-size: 10px; white-space: nowrap; }
+        .cce-table th { background: #020617; padding: 8px; color: #10b981; border-bottom: 1px solid #334155; text-align: left;}
+        .cce-table td { padding: 8px; border-bottom: 1px solid #334155; }
+        .cce-table-wrapper { overflow-x: auto; background: #1e293b; border-radius: 8px; border: 1px solid #334155; }
+
+        /* WARNING WHATSAPP */
+        #whatsapp-jail {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #ef4444; color: white; z-index: 99999; padding: 30px; box-sizing: border-box; flex-direction: column; justify-content: center; align-items: center; text-align: center;
+        }
     </style>
 </head>
 <body>
 
-    <div class="app-header">
-        <h1 class="app-title" id="header-title">Cuckoo View</h1>
+    <div id="whatsapp-jail">
+        <h1 style="font-size: 50px; margin:0;">🛑</h1>
+        <h2>3D BLOCCATO!</h2>
+        <p>Stai usando il visualizzatore interno di WhatsApp.<br>Tocca i 3 puntini in alto a destra e seleziona <b>"Apri in Chrome / Safari"</b>.</p>
+    </div>
+
+    <div class="app-header" id="main-header">
+        <div>
+            <h1 class="app-title" id="header-title">Cuckoo View</h1>
+            <div style="font-size: 9px; color: #64748b;">Project Hub & Exporter</div>
+        </div>
         <div class="header-buttons" id="header-buttons">
-            <button class="btn-share" id="share-btn" onclick="exportAndShare()">📤 CONDIVIDI</button>
-            <button class="btn-chiudi" id="btn-close" onclick="resetApp()">✖ CHIUDI</button>
+            <button class="btn btn-restore" id="btn-restore" onclick="injectIntoSuite()">⏏️ INSUFFLA IN SUITE</button>
+            <button class="btn btn-load" onclick="document.getElementById('fileInp').click()">📂 CARICA PROGETTO</button>
+            <button class="btn btn-share" onclick="exportProject('master')">💾 SALVA MASTER</button>
+            <input type="file" id="fileInp" accept=".html,.ccb,.ccn" style="display: none;" onchange="handleFileUpload(event)">
         </div>
     </div>
 
-    <div id="start-screen">
-        <div style="margin-bottom: 30px;">
-            <img src="icon-192.png" alt="Logo" style="width: 100px; height: 100px; opacity: 0.8; border-radius: 16px;" onerror="this.style.display='none'">
-            <p style="color: #94a3b8; font-size: 14px; margin-top: 15px;">Il visore intelligente per Produzione e Logistica</p>
-        </div>
-        
-        <div class="upload-btn-wrapper" id="upload-wrapper">
-            <button class="btn-massive">📂 APRI FILE</button>
-            <input type="file" id="fileInp" accept=".ccb, .ccn" onchange="handleFileUpload(event)">
-        </div>
+    <div class="tabs-container" id="main-tabs">
+        <button class="tab-btn" onclick="switchTab('cce')" id="tab-btn-cce">
+            <div class="status-dot" id="dot-cce"></div> 🥚 Opere (DB)
+        </button>
+        <button class="tab-btn active" onclick="switchTab('ccb')" id="tab-btn-ccb">
+            <div class="status-dot" id="dot-ccb"></div> 📦 Casse
+        </button>
+        <button class="tab-btn" onclick="switchTab('ccn')" id="tab-btn-ccn">
+            <div class="status-dot" id="dot-ccn"></div> 🚚 Logistica
+        </button>
     </div>
 
-    <div id="data-screen">
-        <div class="canvas-area">
-            <div id="canvas-container"></div>
-            
-            <div class="overlay-controls">
-                
-                <div id="controls-ccb" class="control-group" style="display: none; width: 100%;">
-                    <select id="box-selector" onchange="renderBoxUI()"></select>
-                    <div class="slider-container">
-                        <span style="font-size: 12px; color: #f59e0b; font-weight: bold;">💥 ESPLOSO</span>
-                        <input type="range" id="explode-slider" min="0" max="150" value="0">
-                    </div>
+    <div id="screen-cce" class="module-screen">
+        <div id="empty-cce" class="empty-state">
+            <div style="font-size: 40px; margin-bottom: 10px;">🥚</div>
+            Nessun Database Master (CCE).<br>Assicurati di aver salvato i dati in Cuckoo Egg.
+        </div>
+        <div id="content-cce" style="display: none; flex-direction: column; height: 100%;">
+            <div style="padding: 15px; background: #020617; border-bottom: 1px solid #334155; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <h3 style="margin: 0; color: #10b981; font-size: 14px;">Database Generale Consolidato</h3>
+                    <div style="font-size: 10px; color: #94a3b8;">Include dimensioni casse (CCB) e posizioni di carico (CCN)</div>
                 </div>
-
-                <div id="controls-ccn" class="control-group" style="display: none; width: 100%;">
-                    <select id="trip-selector" onchange="renderNestUI()"></select>
-                    <label style="font-size: 11px; color: #cbd5e1; display: flex; align-items: center; gap: 5px; margin-top: 5px; cursor: pointer;">
-                        <input type="checkbox" id="ccn-xray"> Raggi-X
-                    </label>
-                </div>
-
+                <button class="btn btn-excel" onclick="exportExcelDB()">📊 ESPORTA EXCEL (Dogana/Assic.)</button>
+            </div>
+            <div class="info-area" style="padding: 10px;">
+                <div class="cce-table-wrapper" id="cce-table-container"></div>
             </div>
         </div>
-        <div class="info-area" id="info-container"></div>
+    </div>
+
+    <div id="screen-ccb" class="module-screen active">
+        <div id="empty-ccb" class="empty-state">
+            <div style="font-size: 40px; margin-bottom: 10px;">📦</div>
+            Nessun dato di Produzione (CCB).<br>Invia casse da Cuckoo Box per visualizzarle.
+        </div>
+        <div id="content-ccb" style="display: none; flex-direction: column; height: 100%;">
+            <div class="canvas-area">
+                <div id="canvas-container-ccb"></div>
+                <div class="overlay-controls">
+                    <div class="control-group">
+                        <select id="box-selector" onchange="renderBoxUI()"></select>
+                        <div style="display: flex; align-items: center; gap: 5px;">
+                            <span style="font-size: 10px; color: #f59e0b;">ESPLOSO</span>
+                            <input type="range" id="explode-slider" min="0" max="150" value="0">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="info-area" id="info-ccb"></div>
+        </div>
+    </div>
+
+    <div id="screen-ccn" class="module-screen">
+        <div id="empty-ccn" class="empty-state">
+            <div style="font-size: 40px; margin-bottom: 10px;">🚚</div>
+            Nessun dato di Logistica (CCN).<br>Invia un piano di carico da Cuckoo Nest per visualizzarlo.
+        </div>
+        <div id="content-ccn" style="display: none; flex-direction: column; height: 100%;">
+            <div class="canvas-area">
+                <div id="canvas-container-ccn"></div>
+                <div class="overlay-controls">
+                    <div class="control-group">
+                        <select id="trip-selector" onchange="renderNestUI()"></select>
+                        <label style="font-size: 10px; color: #cbd5e1; display: flex; align-items: center; gap: 5px;">
+                            <input type="checkbox" id="ccn-xray"> Raggi-X
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="info-area" id="info-ccn"></div>
+        </div>
     </div>
 
 <script>
-let currentP5 = null;
-let appMode = 'none'; 
-let parsedData = null;
+// ==========================================
+// STATO GLOBALE DEL PROGETTO
+// ==========================================
+let GlobalProject = {
+    cce: null, // Dati Cuckoo Egg (DB Master)
+    ccb: null, // Dati Cuckoo Box (Casse)
+    ccn: null  // Dati Cuckoo Nest (Logistica)
+};
 
-// ==========================================
-// 1. GESTIONE AVVIO E DATI INIETTATI
-// ==========================================
+let currentP5 = null;
+let currentTab = 'ccb';
+let standaloneMode = false; // Flag per nascondere l'interfaccia quando si esporta standalone
+
 document.addEventListener("DOMContentLoaded", function() {
-    let uiPanels = document.querySelectorAll('.control-group');
-    uiPanels.forEach(panel => {
-        panel.addEventListener('mousedown', e => e.stopPropagation());
-        panel.addEventListener('touchstart', e => e.stopPropagation(), {passive: false});
-        panel.addEventListener('touchmove', e => e.stopPropagation(), {passive: false});
-        panel.addEventListener('wheel', e => e.stopPropagation());
+    // Previeni scroll e zoom su mobile
+    document.querySelectorAll('.control-group').forEach(p => {
+        p.addEventListener('mousedown', e => e.stopPropagation());
+        p.addEventListener('touchstart', e => e.stopPropagation(), {passive: false});
     });
 
-    // Controllo se il file ha dati pre-caricati (condiviso via email/whatsapp)
-    let dataTag = document.getElementById('cuckoo-payload-data');
+    let dataTag = document.getElementById('cuckoo-project-data');
     if (dataTag && dataTag.textContent.trim().length > 10) {
+        // Rilevamento Jail WhatsApp (Browser interno)
+        setTimeout(() => { if (typeof p5 === 'undefined') document.getElementById('whatsapp-jail').style.display = 'flex'; }, 1500);
+        
         try {
-            // DISTRUZIONE FISICA DELLA SCHERMATA START PER EVITARE ACCAVALLAMENTI
-            let startNode = document.getElementById('start-screen');
-            if(startNode) startNode.remove();
+            let decoded = decodeURIComponent(escape(atob(dataTag.textContent.trim())));
+            GlobalProject = JSON.parse(decoded);
+            normalizeProjectData(); 
             
-            let btnNode = document.getElementById('header-buttons');
-            if(btnNode) btnNode.remove();
-
-            let data = JSON.parse(dataTag.textContent);
-            processData(data);
-        } catch(err) {
-            alert("Errore critico: dati corromputi durante il trasferimento.");
-        }
+            // Controlla se è un file Standalone (solo una vista)
+            if(GlobalProject.standalone) {
+                standaloneMode = true;
+                document.getElementById('main-header').style.display = 'none';
+                document.getElementById('main-tabs').style.display = 'none';
+                switchTab(GlobalProject.standalone);
+            } else {
+                document.getElementById('header-buttons').style.display = 'flex';
+                document.querySelector('.btn-load').style.display = 'none';
+                document.getElementById('btn-restore').style.display = 'block';
+                updateUI();
+            }
+        } catch(err) { alert("File di progetto corrotto."); }
+    } else {
+        // Se non ci sono dati embedded, leggi dal LocalStorage (Uso normale interno alla Suite)
+        checkIncomingData();
     }
 });
 
-function resetApp() {
-    if (currentP5) { currentP5.remove(); currentP5 = null; }
-    document.getElementById('canvas-container').innerHTML = ''; 
-    appMode = 'none';
-    parsedData = null;
-    let fileInput = document.getElementById('fileInp');
-    if(fileInput) fileInput.value = "";
-    
-    document.getElementById('start-screen').style.display = 'flex';
-    document.getElementById('data-screen').style.display = 'none';
-    document.getElementById('btn-close').style.display = 'none';
-    document.getElementById('share-btn').style.display = 'none';
-    document.getElementById('header-title').innerText = "Cuckoo View";
-}
+window.addEventListener('storage', function(e) {
+    if (e.key === 'cuckoo_view_transfer_data') checkIncomingData();
+});
 
-function handleFileUpload(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = function(e) {
+function checkIncomingData() {
+    if(standaloneMode) return; // Se siamo in un file esportato bloccato, ignora il localstorage
+    let raw = localStorage.getItem('cuckoo_view_transfer_data');
+    if (raw) {
         try {
-            let data = JSON.parse(e.target.result);
-            processData(data);
-        } catch(err) {
-            alert("File non valido.");
-            resetApp();
-        }
-    };
-    reader.readAsText(file);
+            let data = JSON.parse(raw);
+            if (data.cce) GlobalProject.cce = data.cce;
+            if (data.ccb) GlobalProject.ccb = data.ccb;
+            if (data.ccn) GlobalProject.ccn = data.ccn;
+            normalizeProjectData();
+            updateUI();
+        } catch(e) { console.error(e); }
+    }
 }
 
-function processData(data) {
-    let isBox = (data.type === 'CuckooBox') || (data.crates !== undefined && data.settings !== undefined);
-    let isNest = (data.type === 'CuckooNest') || (data.trips !== undefined) || (data.vehicle !== undefined && data.crates !== undefined);
-
-    let startScreen = document.getElementById('start-screen');
-    if(startScreen) startScreen.style.display = 'none';
+function normalizeProjectData() {
+    // Normalizza CCB
+    if (GlobalProject.ccb && GlobalProject.ccb.crates) {
+        GlobalProject.ccb.crates.forEach(c => {
+            if (c.results) {
+                if (!c.results.dimF && c.results.dimensioniFinali) c.results.dimF = c.results.dimensioniFinali;
+                if (!c.results.set) c.results.set = GlobalProject.ccb.settings || { i: 20, legno: 18, rW: 100, rSpess: 18 };
+            }
+        });
+    }
     
-    document.getElementById('data-screen').style.display = 'flex';
-
-    if (!document.getElementById('cuckoo-payload-data')) {
-        document.getElementById('btn-close').style.display = 'block';
-        document.getElementById('share-btn').style.display = 'block';
-    }
-
-    if (isBox) {
-        appMode = 'box';
-        if (data.crates) {
-            data.crates.forEach(c => {
-                if (c.results) {
-                    if (!c.results.dimF && c.results.dimensioniFinali) c.results.dimF = c.results.dimensioniFinali;
-                    if (!c.results.set) c.results.set = data.settings || { i: 20, legno: 18, rW: 100, rSpess: 18 };
-                }
+    // Normalizza CCN (Se proviene dalla vecchia versione v14)
+    if (GlobalProject.ccn && !GlobalProject.ccn.tripsData && GlobalProject.ccn.crates) {
+        let data = GlobalProject.ccn;
+        data.tripsData = []; 
+        let tripMap = {};
+        
+        data.crates.forEach(c => {
+            if (c.trip !== -1) {
+                if (!tripMap[c.trip]) tripMap[c.trip] = [];
+                tripMap[c.trip].push(c);
+            }
+        });
+        
+        for (let key in tripMap) {
+            data.tripsData.push({ 
+                id: parseInt(key), 
+                name: `Viaggio ${parseInt(key) + 1}`,
+                type: 'strada',
+                vehicle: data.vehicle || {L: 700, P: 240, H: 250},
+                items: tripMap[key] 
             });
         }
-        parsedData = data;
-        document.getElementById('header-title').innerText = "📦 Produzione";
-        document.getElementById('controls-ccb').style.display = 'flex';
-        document.getElementById('controls-ccn').style.display = 'none';
-        initBoxMode();
-    } 
-    else if (isNest) {
-        appMode = 'nest';
-        if (!data.trips && data.crates) {
-            data.trips = []; data.banchina = []; data.globalVehicle = data.vehicle;
-            let tripMap = {};
-            data.crates.forEach(c => {
-                if (c.trip === -1) data.banchina.push(c);
-                else {
-                    if (!tripMap[c.trip]) tripMap[c.trip] = [];
-                    tripMap[c.trip].push(c);
-                }
-            });
-            for (let key in tripMap) data.trips.push({ id: parseInt(key), vehicle: data.vehicle, items: tripMap[key] });
-            data.trips.sort((a, b) => a.id - b.id);
-        }
-        parsedData = data;
-        document.getElementById('header-title').innerText = "🚚 Logistica";
-        document.getElementById('controls-ccb').style.display = 'none';
-        document.getElementById('controls-ccn').style.display = 'flex';
-        initNestMode();
     }
 }
 
 // ==========================================
-// 2. ESPORTAZIONE HTML PULITA
+// FUNZIONI DI ESPORTAZIONE (I 3 FILE)
 // ==========================================
-function exportAndShare() {
-    if(!parsedData) return;
 
-    let fileName = appMode === 'box' ? `Taglio_Cassa_${parsedData.crates[0].id}.html` : `Carico_Logistico.html`;
+// 1. ESPORTA EXCEL (Dal Master DB)
+function exportExcelDB() {
+    if (!GlobalProject.cce || GlobalProject.cce.length === 0) return alert("Database CCE vuoto.");
+    
+    try {
+        const ws = XLSX.utils.json_to_sheet(GlobalProject.cce);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Database_Opere_Logistica");
+        XLSX.writeFile(wb, `Cuckoo_DB_Master_${new Date().toISOString().slice(0,10)}.xlsx`);
+    } catch(e) {
+        alert("Errore esportazione Excel: " + e.message);
+    }
+}
 
-    // Clona il documento attuale
+// 2 & 3. ESPORTA HTML (Master, CCB Standalone, CCN Standalone)
+function exportProject(mode) {
+    if(!GlobalProject.ccb && !GlobalProject.ccn && !GlobalProject.cce) {
+        return alert("Progetto vuoto!");
+    }
+
     let cloneDoc = document.documentElement.cloneNode(true);
-    
-    // Rimuove la spazzatura dal clone
-    let oldPayload = cloneDoc.querySelector('#cuckoo-payload-data');
+    let oldPayload = cloneDoc.querySelector('#cuckoo-project-data');
     if(oldPayload) oldPayload.remove();
 
-    let canvasCont = cloneDoc.querySelector('#canvas-container');
-    if(canvasCont) canvasCont.innerHTML = '';
+    // Svuota i canvas per evitare conflitti P5.js al ripristino
+    let cc1 = cloneDoc.querySelector('#canvas-container-ccb'); if(cc1) cc1.innerHTML = '';
+    let cc2 = cloneDoc.querySelector('#canvas-container-ccn'); if(cc2) cc2.innerHTML = '';
 
-    let infoCont = cloneDoc.querySelector('#info-container');
-    if(infoCont) infoCont.innerHTML = '';
+    // Crea un payload specifico in base alla richiesta
+    let exportPayload = { standalone: false };
+    
+    if (mode === 'master') {
+        exportPayload = { ...GlobalProject };
+    } else if (mode === 'ccb') {
+        exportPayload = { ccb: GlobalProject.ccb, standalone: 'ccb' };
+        // Togliamo visivamente gli altri tab dal clone
+        cloneDoc.querySelector('#main-header').remove();
+        cloneDoc.querySelector('#main-tabs').remove();
+    } else if (mode === 'ccn') {
+        exportPayload = { ccn: GlobalProject.ccn, standalone: 'ccn' };
+        cloneDoc.querySelector('#main-header').remove();
+        cloneDoc.querySelector('#main-tabs').remove();
+    }
 
-    // Inietta i dati JSON puri
-    let jsonData = JSON.stringify(parsedData).replace(/</g, '\\u003c');
+    let jsonStr = JSON.stringify(exportPayload);
+    let b64Data = btoa(unescape(encodeURIComponent(jsonStr)));
+    
     let script = document.createElement('script');
-    script.id = 'cuckoo-payload-data';
-    script.type = 'application/json';
-    script.textContent = jsonData;
+    script.id = 'cuckoo-project-data';
+    script.textContent = b64Data;
     cloneDoc.querySelector('body').appendChild(script);
 
     let finalHtml = "<!DOCTYPE html>\n<html lang=\"it\">\n" + cloneDoc.outerHTML + "\n</html>";
     let blob = new Blob([finalHtml], {type: "text/html"});
-    let file = new File([blob], fileName, {type: "text/html"});
+    
+    let filename = `Cuckoo_${mode.toUpperCase()}_${new Date().getTime()}.html`;
+    let file = new File([blob], filename, {type: "text/html"});
 
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        navigator.share({
-            title: 'Visualizzatore Cuckoo',
-            text: 'Ecco il modello 3D. Aprilo con Chrome per visualizzarlo correttamente.',
-            files: [file]
-        }).catch(err => triggerDownload(blob, fileName));
+        navigator.share({ title: filename, files: [file] }).catch(() => triggerDownload(file));
     } else {
-        triggerDownload(blob, fileName);
+        triggerDownload(file);
     }
 }
 
-function triggerDownload(blob, fileName) {
-    let url = URL.createObjectURL(blob);
+function triggerDownload(file) {
+    let url = URL.createObjectURL(file);
     let a = document.createElement('a');
-    a.href = url;
-    a.download = fileName;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    a.href = url; a.download = file.name;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
 }
 
 // ==========================================
-// 3. LANCIO 3D SICURO (Anti-Bug Mobile)
+// GESTIONE UI E TABS
 // ==========================================
-function safeStartP5(sketchFunc) {
-    let container = document.getElementById('canvas-container');
+function updateUI() {
+    document.getElementById('dot-cce').classList.toggle('on', !!GlobalProject.cce);
+    document.getElementById('dot-ccb').classList.toggle('on', !!GlobalProject.ccb);
+    document.getElementById('dot-ccn').classList.toggle('on', !!GlobalProject.ccn);
+
+    // Auto-switch intelligente se carichiamo roba nuova
+    if (currentTab === 'cce' && !GlobalProject.cce && GlobalProject.ccb) switchTab('ccb');
+    else if (currentTab === 'ccb' && !GlobalProject.ccb && GlobalProject.ccn) switchTab('ccn');
+    else switchTab(currentTab);
+}
+
+function switchTab(tabId) {
+    currentTab = tabId;
+    if(!standaloneMode) {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        let activeBtn = document.getElementById(`tab-btn-${tabId}`);
+        if(activeBtn) activeBtn.classList.add('active');
+    }
+
+    document.querySelectorAll('.module-screen').forEach(s => s.classList.remove('active'));
+    let activeScreen = document.getElementById(`screen-${tabId}`);
+    if(activeScreen) activeScreen.classList.add('active');
+
+    if (currentP5) { currentP5.remove(); currentP5 = null; }
+    document.getElementById('canvas-container-ccb').innerHTML = '';
+    document.getElementById('canvas-container-ccn').innerHTML = '';
+
+    if (tabId === 'cce') {
+        if (GlobalProject.cce && GlobalProject.cce.length > 0) {
+            document.getElementById('empty-cce').style.display = 'none';
+            document.getElementById('content-cce').style.display = 'flex';
+            renderEggUI();
+        } else {
+            document.getElementById('empty-cce').style.display = 'flex';
+            document.getElementById('content-cce').style.display = 'none';
+        }
+    } else if (tabId === 'ccb') {
+        if (GlobalProject.ccb && GlobalProject.ccb.crates && GlobalProject.ccb.crates.length > 0) {
+            document.getElementById('empty-ccb').style.display = 'none';
+            document.getElementById('content-ccb').style.display = 'flex';
+            initBoxMode();
+        } else {
+            document.getElementById('empty-ccb').style.display = 'flex';
+            document.getElementById('content-ccb').style.display = 'none';
+        }
+    } else if (tabId === 'ccn') {
+        if (GlobalProject.ccn && GlobalProject.ccn.tripsData && GlobalProject.ccn.tripsData.length > 0) {
+            document.getElementById('empty-ccn').style.display = 'none';
+            document.getElementById('content-ccn').style.display = 'flex';
+            initNestMode();
+        } else {
+            document.getElementById('empty-ccn').style.display = 'flex';
+            document.getElementById('content-ccn').style.display = 'none';
+        }
+    }
+}
+
+function safeStartP5(sketchFunc, containerId) {
+    let container = document.getElementById(containerId);
+    if(!container) return;
     container.innerHTML = '';
     if (currentP5) { currentP5.remove(); currentP5 = null; }
 
-    // Aspetta che il browser assegni una larghezza reale al div (evita il bug canvas 0x0)
+    let attempts = 0;
     let checkSize = setInterval(() => {
+        attempts++;
         if (container.clientWidth > 0 && container.clientHeight > 0) {
             clearInterval(checkSize);
-            currentP5 = new p5(sketchFunc, 'canvas-container');
+            currentP5 = new p5(sketchFunc, containerId);
+        } else if (attempts > 20) {
+            clearInterval(checkSize);
         }
     }, 50);
 }
 
+function injectIntoSuite() {
+    if(!GlobalProject.cce && !GlobalProject.ccb && !GlobalProject.ccn) return alert("Nessun dato da ripristinare.");
+    
+    if(GlobalProject.cce) localStorage.setItem('cuckoo_egg_db', JSON.stringify(GlobalProject.cce));
+    if(GlobalProject.ccb) localStorage.setItem('cuckoo_box_import_queue', JSON.stringify(GlobalProject.ccb.crates));
+    if(GlobalProject.ccn) {
+        let cassePulite = GlobalProject.ccn.crates.map(c => ({...c, trip: -1, x: 9999, y: 9999, z: 0, isChild: false, manual: false}));
+        localStorage.setItem('cuckoo_nest_transfer_queue', JSON.stringify(cassePulite));
+    }
+    
+    alert("✅ Dati insufflati con successo!\nLe tue app locali (Egg, Box, Nest) sono state aggiornate con questi dati.");
+}
+
+// ==========================================
+// RENDER CCE (MASTER DB)
+// ==========================================
+function renderEggUI() {
+    let db = GlobalProject.cce;
+    let html = `<table class="cce-table"><thead><tr>
+        <th>ID / INV</th><th>AUTORE & TITOLO</th><th>L×P×H (Opera)</th><th>PESO (Opera)</th><th>TARA CASSA</th><th>L×P×H (Cassa Ext)</th><th>POSIZIONE / CAMION</th>
+    </tr></thead><tbody>`;
+    
+    db.forEach(o => {
+        let cassaInfo = o.cassa ? `<span style="color:#f59e0b;">${o.cassa}</span>` : "-";
+        let dimCassa = o.l_max_cassa ? `${o.l_max_cassa}×${o.p_max_cassa}×${o.h_max_cassa}` : "-";
+        let dimOp = o.l_max ? `${o.l_max}×${o.p_max}×${o.h_max}` : "-";
+        let taraInfo = o.tara ? `${o.tara} KG` : "-";
+        let camionInfo = o.camion ? `<span style="color:#3b82f6; font-weight:bold;">${o.camion}</span>` : "Da gestire";
+
+        html += `<tr>
+            <td style="font-weight:bold; color:#10b981;">${o.id}</td>
+            <td style="white-space:normal; min-width: 150px;">${o.autore || ''}<br><i style="color:#cbd5e1">${o.titolo || ''}</i></td>
+            <td>${dimOp}</td>
+            <td>${o.peso || '-'}</td>
+            <td>${taraInfo}</td>
+            <td>${dimCassa}</td>
+            <td>${cassaInfo}<br>${camionInfo}</td>
+        </tr>`;
+    });
+    
+    html += `</tbody></table>`;
+    document.getElementById('cce-table-container').innerHTML = html;
+}
+
+// ==========================================
+// MODULO CCB (PRODUZIONE CASSE)
+// ==========================================
 function initBoxMode() {
+    let data = GlobalProject.ccb;
     let sel = document.getElementById('box-selector');
     sel.innerHTML = "";
-    if (parsedData.crates && parsedData.crates.length > 0) {
-        parsedData.crates.forEach((c, idx) => { sel.innerHTML += `<option value="${idx}">Cassa: ${c.id}</option>`; });
-    }
+    data.crates.forEach((c, idx) => { sel.innerHTML += `<option value="${idx}">Cassa: ${c.id}</option>`; });
+    
     renderBoxUI();
-    safeStartP5(sketchBox);
-}
-
-function initNestMode() {
-    let sel = document.getElementById('trip-selector');
-    sel.innerHTML = "";
-    if (parsedData.trips && parsedData.trips.length > 0) {
-        parsedData.trips.forEach((t, idx) => { sel.innerHTML += `<option value="${idx}">Viaggio #${idx + 1}</option>`; });
-    }
-    renderNestUI();
-    safeStartP5(sketchNest);
-}
-
-// ==========================================
-// 4. RENDERING UI
-// ==========================================
-function generateTableRows(dict) {
-    if (!dict) return "<tr><td>Nessun dato</td></tr>";
-    let rows = "";
-    Object.values(dict).forEach(v => {
-        let l = v.l || v.w || 0; let p = v.p || v.h || 0;
-        rows += `<tr><th>${v.nome}</th><td>${l.toFixed(0)} × ${p.toFixed(0)}</td></tr>`;
-    });
-    return rows;
+    safeStartP5(sketchBox, 'canvas-container-ccb');
 }
 
 function renderBoxUI() {
+    let data = GlobalProject.ccb;
     let idx = document.getElementById('box-selector').value || 0;
-    if (!parsedData.crates || parsedData.crates.length === 0) return;
+    let crate = data.crates[idx];
+    if(!crate || !crate.results) return;
 
-    let crate = parsedData.crates[idx];
     let dimF = crate.results.dimF;
-    let pesoLegno = dimF.pesoLegno ? dimF.pesoLegno.toFixed(1) : "N/D";
+    let pNetto = (crate.pesoNetto) ? `${crate.pesoNetto} KG` : "-";
 
-    let html = `
+    const makeRows = (dict) => {
+        if(!dict) return "<tr><td>-</td></tr>";
+        return Object.values(dict).map(v => `<tr><th>${v.nome}</th><td>${(v.l||v.w).toFixed(0)}×${(v.p||v.h).toFixed(0)}</td></tr>`).join("");
+    };
+
+    let btnExportHTML = standaloneMode ? "" : `<button class="btn-whatsapp btn" onclick="exportProject('ccb')">📤 INVIA 3D E MISURE VIA WHATSAPP (Per Falegname)</button>`;
+
+    document.getElementById('info-ccb').innerHTML = `
         <div class="info-card">
-            <h3>📏 Specifiche Cassa (${crate.id})</h3>
+            <h3>📏 Specifiche (${crate.id})</h3>
             <table class="data-table">
-                <tr><th>Interne (Vano)</th><td>L ${crate.L/10} x P ${crate.P/10} x H ${crate.H/10} cm</td></tr>
-                <tr><th>Ingombro Esterno</th><td>L ${(dimF.lExt/10).toFixed(1)} x P ${(dimF.pExt/10).toFixed(1)} x H ${(dimF.hExt/10).toFixed(1)} cm</td></tr>
-                <tr><th>Peso Legno Cassa</th><td style="color:#f59e0b;">${pesoLegno} KG</td></tr>
+                <tr><th>Vano Int.</th><td>${crate.L/10} × ${crate.P/10} × ${crate.H/10} cm</td></tr>
+                <tr><th>Esterno Max</th><td>${(dimF.lExt/10).toFixed(1)} × ${(dimF.pExt/10).toFixed(1)} × ${(dimF.hExt/10).toFixed(1)} cm</td></tr>
+                <tr><th>Tara (Legno)</th><td style="color:#f59e0b;">${dimF.pesoLegno.toFixed(1)} KG</td></tr>
+                <tr><th>Peso Netto</th><td style="color:#3b82f6;">${pNetto}</td></tr>
             </table>
+            ${btnExportHTML}
         </div>
-        <div class="info-card"><h3 style="color:#f59e0b;">🪵 Tagli Legno (mm)</h3><table class="data-table">${generateTableRows(crate.results.pan)}</table></div>
-        <div class="info-card"><h3 style="color:#3b82f6;">🧊 Tagli Imbottitura (mm)</h3><table class="data-table">${generateTableRows(crate.results.imb)}</table></div>
+        <div class="info-card"><h3 style="color:#f59e0b;">🪵 Pannelli Legno</h3><table class="data-table">${makeRows(crate.results.pan)}</table></div>
+        <div class="info-card"><h3 style="color:#3b82f6;">🧊 Imbottitura</h3><table class="data-table">${makeRows(crate.results.imb)}</table></div>
+        ${crate.results.rinf ? `<div class="info-card"><h3 style="color:#10b981;">🔨 Rinforzi</h3><table class="data-table">${makeRows(crate.results.rinf)}</table></div>` : ''}
     `;
-    if (crate.results.rinf) html += `<div class="info-card"><h3 style="color:#10b981;">🔨 Tagli Rinforzi (mm)</h3><table class="data-table">${generateTableRows(crate.results.rinf)}</table></div>`;
-
-    document.getElementById('info-container').innerHTML = html;
 }
 
-function renderNestUI() {
-    let html = "";
-    let idx = document.getElementById('trip-selector').value || 0;
-    let trip = parsedData.trips && parsedData.trips.length > 0 ? parsedData.trips[idx] : null;
-
-    if (trip) {
-        let veh = trip.vehicle || parsedData.globalVehicle;
-        html += `<div class="info-card"><h3>🚚 Dati Viaggio #${parseInt(idx)+1}</h3>
-            <table class="data-table"><tr><th>Vano Utilizzato</th><td>${veh.L} x ${veh.P} x ${veh.H} cm</td></tr>
-            <tr><th>Casse Caricate</th><td>${trip.items.filter(i => !i.isEntity).length}</td></tr></table></div>`;
-        
-        let reali = trip.items.filter(i => !i.isEntity);
-        if (reali.length > 0) {
-            html += `<div class="info-card"><h3>📋 Distinta di Carico</h3><table class="data-table">`;
-            reali.forEach(i => {
-                let label = i.isChild ? `<span class="tag tag-green">IMPILATA</span>` : (i.isFlipped ? `<span class="tag tag-yellow">RIBALTATA</span>` : '');
-                let pesoStr = i.peso ? `| ${i.peso}KG` : '';
-                html += `<tr><td>${i.id} <br> <span style="font-weight:normal; font-size:10px; color:#94a3b8;">${i.L}x${i.P}x${i.H} ${pesoStr}</span></td><td style="text-align:right;">${label}</td></tr>`;
-            });
-            html += `</table></div>`;
-        }
-    }
-    document.getElementById('info-container').innerHTML = html || "<p style='color:#94a3b8; padding: 20px;'>Nessun dato.</p>";
-}
-
-// ==========================================
-// 5. MOTORI 3D
-// ==========================================
+// MOTORE 3D CCB 
 const sketchBox = function(p) {
-    p.setup = function() {
-        let d = document.getElementById('canvas-container');
-        p.createCanvas(d.clientWidth, d.clientHeight, p.WEBGL);
+    p.setup = () => {
+        let d = document.getElementById('canvas-container-ccb');
+        p.createCanvas(d.clientWidth || 300, d.clientHeight || 300, p.WEBGL);
     };
-
-    p.windowResized = function() {
-        let d = document.getElementById('canvas-container');
-        if (d && d.clientWidth > 0) p.resizeCanvas(d.clientWidth, d.clientHeight);
+    p.windowResized = () => {
+        let d = document.getElementById('canvas-container-ccb');
+        if(d && d.clientWidth>0) p.resizeCanvas(d.clientWidth, d.clientHeight);
     };
-
-    p.draw = function() {
-        p.background('#1e293b');
-        p.orbitControl(1, 1, 0.1); 
-
-        if (!parsedData || appMode !== 'box') return;
+    p.draw = () => {
+        p.background('#1e293b'); 
+        p.orbitControl(1, 1, 0.1);
+        p.ambientLight(150);
+        p.directionalLight(255, 255, 255, 0.5, 1, -0.5);
 
         let idx = document.getElementById('box-selector').value || 0;
-        let item = parsedData.crates[idx];
-        if (!item || !item.results || !item.results.dimF || !item.results.set) return;
+        if (!GlobalProject.ccb || !GlobalProject.ccb.crates[idx]) return;
+        
+        let item = GlobalProject.ccb.crates[idx];
+        if (!item.results) return;
 
-        let dimF = item.results.dimF;
-        let set = item.results.set;
+        let res = item.results;
+        let ex = (document.getElementById('explode-slider').value || 0) / 100;
+        
         let l = item.L, d = item.P, h = item.H;
-        let lT = dimF.lTot, pT = dimF.pTot, hT = dimF.hTot;
-        let i = set.i, legno = set.legno, rW = set.rW, rSpess = set.rSpess;
+        let lT = res.dimF.lTot, pT = res.dimF.pTot, hT = res.dimF.hTot;
+        let i = res.set.i, legno = res.set.legno;
+        let rW = res.set.rW, rSpess = res.set.rSpess;
 
-        let maxDim = Math.max(dimF.lExt, dimF.pExt, dimF.hExt);
-        let S = (p.width < 400 ? 120 : 180) / maxDim; 
-        let ex = parseFloat(document.getElementById('explode-slider').value) || 0;
+        let maxDim = Math.max(res.dimF.lExt, res.dimF.pExt, res.dimF.hExt);
+        let S = 160 / maxDim; 
+        
+        p.perspective(); p.rotateX(0.8); p.rotateZ(0.5); 
+        p.strokeWeight(1); 
 
-        p.perspective(); p.rotateX(0.8); p.rotateZ(0.5); p.strokeWeight(1);
-
-        const drawP = function(x, y, z, w, depth, height, dirX, dirY, dirZ, colorArr, isGlass=false, labelStr="") {
+        const drawP = (x, y, z, sizeX, sizeY, sizeZ, dirX, dirY, dirZ, col, str) => {
             p.push(); 
-            p.translate((x + dirX*ex)*S, (y + dirY*ex)*S, (z + dirZ*ex)*S); 
-            
-            if (isGlass) { p.fill(240, 240, 240, 60); p.stroke(0, 0, 0, 80); } 
-            else { p.fill(colorArr[0], colorArr[1], colorArr[2]); p.stroke(50, 25, 15); }
-            
-            p.box(w * S, depth * S, height * S); 
-
-            if (labelStr !== "" && ex > 0.2) {
-                p.push(); p.fill(isGlass ? 30 : 255); p.noStroke(); p.textSize(Math.max(12, 35 * S)); p.textAlign(p.CENTER, p.CENTER);
-                let zOffset = 0;
-                if (height <= w && height <= depth) { 
-                    zOffset = (height * S) / 2 + 0.1; p.translate(0, 0, dirZ > 0 ? zOffset : -zOffset); if (dirZ < 0) p.rotateX(p.PI);
-                } else if (depth <= w && depth <= height) { 
-                    zOffset = (depth * S) / 2 + 0.1; p.translate(0, dirY > 0 ? zOffset : -zOffset, 0); p.rotateX(p.HALF_PI); if (dirY < 0) p.rotateY(p.PI);
-                } else { 
-                    zOffset = (w * S) / 2 + 0.1; p.translate(dirX > 0 ? zOffset : -zOffset, 0, 0); if (dirX > 0) p.rotateY(p.HALF_PI); else p.rotateY(-p.HALF_PI);
-                }
-                p.text(labelStr, 0, 0); p.pop();
-            }
+            let finalX = (x + dirX * (ex * maxDim * 0.5)) * S;
+            let finalY = (y + dirY * (ex * maxDim * 0.5)) * S;
+            let finalZ = (z + dirZ * (ex * maxDim * 0.5)) * S;
+            p.translate(finalX, finalY, finalZ);
+            p.fill(col); p.stroke(str); 
+            p.box(sizeX * S, sizeY * S, sizeZ * S); 
             p.pop();
         };
 
-        let cEta = [240, 240, 240];
-        drawP(0, 0, -h/2 - i/2, l + 2*i, d + 2*i, i, 0, 0, -1, cEta, true, Math.round(l+2*i)+"x"+Math.round(d+2*i)); 
-        drawP(0, 0, h/2 + i/2, l + 2*i, d + 2*i, i, 0, 0, 1, cEta, true, Math.round(l+2*i)+"x"+Math.round(d+2*i)); 
-        drawP(0, d/2 + i/2, 0, l + 2*i, i, h, 0, 1, 0, cEta, true, Math.round(l+2*i)+"x"+Math.round(h)); 
-        drawP(0, -d/2 - i/2, 0, l + 2*i, i, h, 0, -1, 0, cEta, true, Math.round(l+2*i)+"x"+Math.round(h)); 
-        drawP(-l/2 - i/2, 0, 0, i, d, h, -1, 0, 0, cEta, true, Math.round(d)+"x"+Math.round(h)); 
-        drawP(l/2 + i/2, 0, 0, i, d, h, 1, 0, 0, cEta, true, Math.round(d)+"x"+Math.round(h)); 
+        let colEta = p.color(240,240,240, 200); let strEta = p.color(100);
+        drawP(0, 0, -h/2 - i/2, l + 2*i, d + 2*i, i,  0, 0, -1, colEta, strEta); 
+        drawP(0, 0, h/2 + i/2, l + 2*i, d + 2*i, i,   0, 0, 1, colEta, strEta); 
+        drawP(0, d/2 + i/2, 0, l + 2*i, i, h,         0, 1, 0, colEta, strEta); 
+        drawP(0, -d/2 - i/2, 0, l + 2*i, i, h,        0, -1, 0, colEta, strEta); 
+        drawP(-l/2 - i/2, 0, 0, i, d, h,             -1, 0, 0, colEta, strEta); 
+        drawP(l/2 + i/2, 0, 0, i, d, h,               1, 0, 0, colEta, strEta); 
 
-        let cLegno = [90, 50, 30];
-        drawP(0, 0, -h/2 - i - legno/2, lT, pT, legno, 0, 0, -1.5, cLegno, false, Math.round(lT)+"x"+Math.round(pT)); 
-        drawP(0, 0, h/2 + i + legno/2, lT, pT, legno, 0, 0, 1.5, cLegno, false, Math.round(lT)+"x"+Math.round(pT)); 
-        drawP(0, d/2 + i + legno/2, 0, lT, legno, hT - 2*legno, 0, 1.5, 0, cLegno, false, Math.round(lT)+"x"+Math.round(hT-2*legno)); 
-        drawP(0, -d/2 - i - legno/2, 0, lT, legno, hT - 2*legno, 0, -1.5, 0, cLegno, false, Math.round(lT)+"x"+Math.round(hT-2*legno)); 
-        drawP(-l/2 - i - legno/2, 0, 0, legno, pT - 2*legno, hT - 2*legno, -1.5, 0, 0, cLegno, false, Math.round(pT-2*legno)+"x"+Math.round(hT-2*legno)); 
-        drawP(l/2 + i + legno/2, 0, 0, legno, pT - 2*legno, hT - 2*legno, 1.5, 0, 0, cLegno, false, Math.round(pT-2*legno)+"x"+Math.round(hT-2*legno)); 
+        let colLegno = p.color(90,50,30, 255); let strLegno = p.color(50,25,10);
+        drawP(0, 0, -h/2 - i - legno/2, lT, pT, legno,  0, 0, -1.5, colLegno, strLegno); 
+        drawP(0, 0, h/2 + i + legno/2, lT, pT, legno,   0, 0, 1.5, colLegno, strLegno); 
+        drawP(0, d/2 + i + legno/2, 0, lT, legno, hT - 2*legno,  0, 1.5, 0, colLegno, strLegno); 
+        drawP(0, -d/2 - i - legno/2, 0, lT, legno, hT - 2*legno, 0, -1.5, 0, colLegno, strLegno); 
+        drawP(-l/2 - i - legno/2, 0, 0, legno, pT - 2*legno, hT - 2*legno, -1.5, 0, 0, colLegno, strLegno); 
+        drawP(l/2 + i + legno/2, 0, 0, legno, pT - 2*legno, hT - 2*legno,  1.5, 0, 0, colLegno, strLegno); 
 
-        if (item.results.rinf) {
-            let cRinf = [220, 170, 110];
-            for (let zOff of [-hT/2 - rSpess/2, hT/2 + rSpess/2]) {
+        if (res.rinf) {
+            let colRinf = p.color(220,170,110, 255); let strRinf = p.color(120,80,40);
+            for(let zOff of [-hT/2 - rSpess/2, hT/2 + rSpess/2]) {
                 let dirZ = zOff < 0 ? -2 : 2;
-                drawP(0, pT/2 + rSpess - rW/2, zOff, lT + 2*rSpess, rW, rSpess, 0, 1, dirZ, cRinf, false, Math.round(lT+2*rSpess)); 
-                drawP(0, -pT/2 - rSpess + rW/2, zOff, lT + 2*rSpess, rW, rSpess, 0, -1, dirZ, cRinf, false, Math.round(lT+2*rSpess)); 
-                drawP(lT/2 + rSpess - rW/2, 0, zOff, rW, pT + 2*rSpess - 2*rW, rSpess, 1, 0, dirZ, cRinf, false, Math.round(pT+2*rSpess-2*rW)); 
-                drawP(-lT/2 - rSpess + rW/2, 0, zOff, rW, pT + 2*rSpess - 2*rW, rSpess, -1, 0, dirZ, cRinf, false, Math.round(pT+2*rSpess-2*rW)); 
+                drawP(0, pT/2 + rSpess - rW/2, zOff, lT + 2*rSpess, rW, rSpess, 0, 1, dirZ, colRinf, strRinf); 
+                drawP(0, -pT/2 - rSpess + rW/2, zOff, lT + 2*rSpess, rW, rSpess, 0, -1, dirZ, colRinf, strRinf); 
+                drawP(lT/2 + rSpess - rW/2, 0, zOff, rW, pT + 2*rSpess - 2*rW, rSpess, 1, 0, dirZ, colRinf, strRinf); 
+                drawP(-lT/2 - rSpess + rW/2, 0, zOff, rW, pT + 2*rSpess - 2*rW, rSpess, -1, 0, dirZ, colRinf, strRinf); 
             }
-            for (let yOff of [pT/2 + rSpess/2, -pT/2 - rSpess/2]) {
+            for(let yOff of [pT/2 + rSpess/2, -pT/2 - rSpess/2]) {
                 let dirY = yOff < 0 ? -2 : 2;
-                drawP(0, yOff, hT/2 - rW/2, lT + 2*rSpess, rSpess, rW, 0, dirY, 1, cRinf, false, Math.round(lT+2*rSpess)); 
-                drawP(0, yOff, -hT/2 + rW/2, lT + 2*rSpess, rSpess, rW, 0, dirY, -1, cRinf, false, Math.round(lT+2*rSpess)); 
-                drawP(lT/2 + rSpess - rW/2, yOff, 0, rW, rSpess, hT - 2*rW, 1, dirY, 0, cRinf, false, Math.round(hT-2*rW)); 
-                drawP(-lT/2 - rSpess + rW/2, yOff, 0, rW, rSpess, hT - 2*rW, -1, dirY, 0, cRinf, false, Math.round(hT-2*rW)); 
+                drawP(0, yOff, hT/2 - rW/2, lT + 2*rSpess, rSpess, rW, 0, dirY, 1, colRinf, strRinf); 
+                drawP(0, yOff, -hT/2 + rW/2, lT + 2*rSpess, rSpess, rW, 0, dirY, -1, colRinf, strRinf); 
+                drawP(lT/2 + rSpess - rW/2, yOff, 0, rW, rSpess, hT - 2*rW, 1, dirY, 0, colRinf, strRinf); 
+                drawP(-lT/2 - rSpess + rW/2, yOff, 0, rW, rSpess, hT - 2*rW, -1, dirY, 0, colRinf, strRinf); 
             }
-            for (let xOff of [lT/2 + rSpess/2, -lT/2 - rSpess/2]) {
+            for(let xOff of [lT/2 + rSpess/2, -lT/2 - rSpess/2]) {
                 let dirX = xOff < 0 ? -2 : 2;
-                drawP(xOff, 0, hT/2 - rW/2, rSpess, pT, rW, dirX, 0, 1, cRinf, false, Math.round(pT)); 
-                drawP(xOff, 0, -hT/2 + rW/2, rSpess, pT, rW, dirX, 0, -1, cRinf, false, Math.round(pT)); 
-                drawP(xOff, pT/2 - rW/2, 0, rSpess, rW, hT - 2*rW, dirX, 1, 0, cRinf, false, Math.round(hT-2*rW)); 
-                drawP(xOff, -pT/2 + rW/2, 0, rSpess, rW, hT - 2*rW, dirX, -1, 0, cRinf, false, Math.round(hT-2*rW)); 
+                drawP(xOff, 0, hT/2 - rW/2, rSpess, pT, rW, dirX, 0, 1, colRinf, strRinf); 
+                drawP(xOff, 0, -hT/2 + rW/2, rSpess, pT, rW, dirX, 0, -1, colRinf, strRinf); 
+                drawP(xOff, pT/2 - rW/2, 0, rSpess, rW, hT - 2*rW, dirX, 1, 0, colRinf, strRinf); 
+                drawP(xOff, -pT/2 + rW/2, 0, rSpess, rW, hT - 2*rW, dirX, -1, 0, colRinf, strRinf); 
             }
         }
     };
 };
 
+// ==========================================
+// MODULO CCN (LOGISTICA MULTIMODALE)
+// ==========================================
+function initNestMode() {
+    let data = GlobalProject.ccn;
+    let sel = document.getElementById('trip-selector');
+    sel.innerHTML = "";
+    
+    if (data.tripsData && data.tripsData.length > 0) {
+        data.tripsData.forEach((t, idx) => { 
+            let cnt = t.items ? t.items.length : 0;
+            let icon = t.type === 'acqua' ? '⛴️' : '🚚';
+            sel.innerHTML += `<option value="${idx}">${icon} ${t.name} (${cnt} casse)</option>`; 
+        });
+    }
+    
+    let banchinaItems = data.crates ? data.crates.filter(c => c.trip === -1) : [];
+    if(banchinaItems.length > 0) {
+        sel.innerHTML += `<option value="banchina">⚠️ Banchina (${banchinaItems.length} Casse)</option>`;
+    }
+
+    if (sel.options.length > 0) sel.value = sel.options[0].value;
+
+    renderNestUI();
+    safeStartP5(sketchNest, 'canvas-container-ccn');
+}
+
+function renderNestUI() {
+    let data = GlobalProject.ccn;
+    let val = document.getElementById('trip-selector').value;
+    let html = "";
+
+    let btnExportHTML = standaloneMode ? "" : `<button class="btn-whatsapp btn" onclick="exportProject('ccn')">📤 INVIA 3D E DISTINTA VIA WHATSAPP (Per Caricatori)</button>`;
+
+    if (val === 'banchina') {
+        let banchinaItems = data.crates.filter(c => c.trip === -1);
+        html = `
+        <div class="info-card" style="border-color:#f59e0b;">
+            <h3 style="color:#f59e0b;">Casse in Banchina (${banchinaItems.length})</h3>
+            <table class="data-table">
+            <tr><th>ID</th><th>Misure (cm)</th><th>Lordo (KG)</th></tr>`;
+        banchinaItems.forEach(i => html += `<tr><td>${i.id}</td><td>${i.L}×${i.P}×${i.H}</td><td>${i.peso||'-'}</td></tr>`);
+        html += `</table></div>`;
+    } else if (val) {
+        let trip = data.tripsData[val];
+        if (trip) {
+            let totalW = 0;
+            let items = trip.items || []; // Previene crash se l'array è mancante
+            items.forEach(i => { if(i.peso) totalW += parseFloat(i.peso); });
+            
+            let icon = trip.type === 'acqua' ? '⛴️' : '🚚';
+
+            html += `<div class="info-card">
+                <h3>${icon} Dati ${trip.name || 'Viaggio'}</h3>
+                <table class="data-table">
+                <tr><th>Vano di Carico</th><td>${trip.vehicle.L} × ${trip.vehicle.P} × ${trip.vehicle.H} cm</td></tr>
+                <tr><th>Casse a Bordo</th><td>${items.length} pz.</td></tr>
+                <tr><th>Peso Stimato</th><td>${totalW.toFixed(1)} KG</td></tr>
+                </table>
+                ${btnExportHTML}
+                </div>`;
+            
+            if (items.length > 0) {
+                html += `<div class="info-card"><h3>📋 Distinta di Carico</h3><table class="data-table">`;
+                let sorted = [...items].sort((a,b) => a.z - b.z);
+                sorted.forEach(i => {
+                    let lbl = i.isChild ? `<span style="color:#10b981;">(Sopra)</span>` : (Math.abs(i.H - i.origH)>0.1 ? `<span style="color:#f59e0b;">(Ribaltata)</span>` : '');
+                    html += `<tr><td><b>${i.id}</b></td><td>${lbl}</td><td>${i.L}×${i.P}×${i.H}</td></tr>`;
+                });
+                html += `</table></div>`;
+            }
+        }
+    }
+    document.getElementById('info-ccn').innerHTML = html || "<p style='color:#94a3b8; padding: 20px;'>Nessun dato.</p>";
+}
+
+// MOTORE 3D CCN ALLINEATO AGLI ASSI VERTICALI DELLA V14.31
 const sketchNest = function(p) {
-    p.setup = function() {
-        let d = document.getElementById('canvas-container');
-        p.createCanvas(d.clientWidth, d.clientHeight, p.WEBGL);
+    p.setup = () => {
+        let d = document.getElementById('canvas-container-ccn');
+        p.createCanvas(d.clientWidth || 300, d.clientHeight || 300, p.WEBGL);
     };
-    p.windowResized = function() {
-        let d = document.getElementById('canvas-container');
-        if (d && d.clientWidth > 0) p.resizeCanvas(d.clientWidth, d.clientHeight);
+    p.windowResized = () => {
+        let d = document.getElementById('canvas-container-ccn');
+        if(d && d.clientWidth>0) p.resizeCanvas(d.clientWidth, d.clientHeight);
     };
+    p.draw = () => {
+        p.background('#1e293b'); 
+        p.orbitControl(1, 1, 0.1);
+        p.ambientLight(150);
+        p.directionalLight(255, 255, 255, 0.5, 1, -0.5);
 
-    p.draw = function() {
-        p.background('#1e293b');
-        p.orbitControl(1, 1, 0.1); 
+        let data = GlobalProject.ccn;
+        let val = document.getElementById('trip-selector').value;
+        if(val === 'banchina' || !data || !data.tripsData) return; 
 
-        if (!parsedData || appMode !== 'nest') return;
+        let trip = data.tripsData[val];
+        if (!trip) return;
 
-        let idx = document.getElementById('trip-selector').value || 0;
-        let trip = parsedData.trips ? parsedData.trips[idx] : null;
-        let veh = trip && trip.vehicle ? trip.vehicle : parsedData.globalVehicle;
-        if (!veh) return;
+        let bL = trip.vehicle.L || 700; 
+        let bP = trip.vehicle.P || 240; 
+        let bH = trip.vehicle.H || 250;
+        let isAcqua = (trip.type === 'acqua');
 
-        let bL = veh.L, bP = veh.P;
-        let S = (p.width < 400 ? 120 : 180) / bL;
+        p.perspective(); p.rotateX(1.0); p.rotateZ(0.5);
+        
+        let maxD = Math.max(bL, bP, bH);
+        p.scale(200 / bL); // Bilancia lo zoom come in CCN
+        p.strokeWeight(bL / 200);
 
-        p.perspective(); p.rotateX(1.0); p.rotateZ(0.5); p.scale(S);
-        p.fill(200, 220, 240, 150); p.stroke(100); p.box(bP, bL, 2);
+        if (isAcqua) {
+            p.fill(14, 165, 233, 100); p.push(); p.translate(0,0,-10); p.box(bP*3, bL*3, 2); p.pop(); 
+            p.fill(217, 119, 6); p.stroke(146, 64, 14); p.box(bP, bL, 5);
+        } else {
+            p.fill(200, 220, 240); p.stroke(100); p.box(bP, bL, 2);
+        }
 
-        if (!trip || !trip.items) return;
-
-        let xrayCheckbox = document.getElementById('ccn-xray');
-        let alpha = (xrayCheckbox && xrayCheckbox.checked) ? 80 : 255;
-
-        trip.items.forEach(function(i) {
-            p.push();
+        let xc = document.getElementById('ccn-xray');
+        let alpha = (xc && xc.checked) ? 100 : 255;
+        
+        let items = trip.items || [];
+        items.forEach(i => {
+            p.push(); 
+            // Inversione X e Y allineata a CCN
             p.translate(i.y + i.P / 2 - bP / 2, i.x + i.L / 2 - bL / 2, i.z + i.H / 2);
-
+            
             if (i.id === 'UOMO') p.fill(96, 165, 250, alpha);
             else if (i.isEntity && i.id.startsWith('TP-')) p.fill(239, 68, 68, alpha);
-            else if (i.isFlipped) p.fill(250, 204, 21, alpha);
+            else if (Math.abs(i.H - i.origH) > 0.1) p.fill(250, 204, 21, alpha);
             else if (i.z > 0) p.fill(16, 185, 129, alpha);
             else if (i.manual) p.fill(59, 130, 246, alpha);
             else p.fill(255, 255, 255, alpha);
-
-            p.stroke(0, alpha); p.box(i.P, i.L, i.H); p.pop();
+            
+            p.stroke(0, alpha); 
+            p.box(i.P, i.L, i.H); // Inversione P e L allineata a CCN
+            p.pop();
         });
     };
 };

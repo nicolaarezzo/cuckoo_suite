@@ -2,9 +2,9 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <title>Cuckoo Nest v14.27</title>
+    <title>Cuckoo Nest v14.31 - Suite Receiver & Multi-Vehicle</title>
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#3b82f6">
+    <meta name="theme-color" content="#ef4444">
     <link rel="apple-touch-icon" href="icon-192.png">
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
@@ -24,31 +24,61 @@
         #sidebar { 
             width: 340px; 
             background: #1e293b; 
-            padding: 20px; 
             border-right: 1px solid #334155; 
             display: flex; 
-            flex-direction: column; 
-            gap: 12px; 
-            overflow-y: auto; 
             flex-shrink: 0; 
-            z-index: 100; 
-            transition: 0.3s; 
+            position: relative;
+            z-index: 9999;
+            transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        #showSidebarBtn { 
-            display: none; 
-            position: fixed; 
-            top: 15px; 
-            left: 15px; 
-            z-index: 900; 
-            background: #3b82f6; 
-            color: white; 
-            border: none; 
-            padding: 8px 15px; 
-            border-radius: 6px; 
-            font-weight: bold; 
-            cursor: pointer; 
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3); 
+        #sidebar.collapsed {
+            margin-left: -340px;
+        }
+
+        .sidebar-content {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            overflow-y: auto;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .toggle-tab-app {
+            position: absolute;
+            left: 100%;
+            top: 15%;
+            transform: translateY(-50%);
+            background: #1e293b;
+            color: #94a3b8;
+            padding: 20px 6px;
+            cursor: pointer;
+            border-radius: 0 8px 8px 0;
+            z-index: 10000;
+            font-weight: bold;
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            border: 1px solid #334155;
+            border-left: none;
+            box-shadow: 4px 0 6px rgba(0,0,0,0.4);
+            transition: 0.2s;
+            white-space: nowrap;
+        }
+        
+        .toggle-tab-app:hover {
+            background: #ef4444; /* Rosso CCN */
+            color: white;
+            border-color: #f87171;
+        }
+
+        #sidebar.collapsed .toggle-tab-app { 
+            width: auto;
+            height: auto;
+            white-space: nowrap;
+            padding: 20px 6px;
+            display: block;
         }
         
         #main { 
@@ -137,6 +167,7 @@
             font-weight: bold; 
             display: flex; 
             justify-content: space-between; 
+            align-items: center;
         }
 
         .trip-body { 
@@ -185,7 +216,6 @@
             flex-shrink: 0;
         }
 
-        /* MODAL STYLES */
         .modal-overlay { 
             display: none; 
             position: fixed; 
@@ -216,110 +246,6 @@
         }
 
         .modal-content h2 { margin-top: 0; color: #3b82f6; }
-        
-        #rawTextInput { 
-            width: 100%; 
-            height: 70px; 
-            background: #0f172a; 
-            border: 1px dashed #3b82f6; 
-            color: #cbd5e1; 
-            padding: 10px; 
-            border-radius: 8px; 
-            resize: vertical; 
-            font-family: monospace; 
-            box-sizing: border-box;
-        }
-
-        .map-table-container { 
-            width: 100%; 
-            overflow-x: auto; 
-            max-height: 200px; 
-            border: 1px solid #334155; 
-            border-radius: 6px; 
-        }
-
-        .map-table { 
-            width: 100%; 
-            border-collapse: collapse; 
-            white-space: nowrap; 
-        }
-        
-        .map-table th { 
-            background: #0f172a; 
-            padding: 5px; 
-            text-align: center; 
-            position: sticky; 
-            top: 0; 
-            z-index: 10; 
-            border-bottom: 2px solid #3b82f6; 
-        }
-        
-        .map-table td { 
-            padding: 2px; 
-            border-bottom: 1px solid #334155; 
-            border-right: 1px dashed #334155; 
-        }
-        
-        .map-table input { 
-            padding: 6px; 
-            margin: 0; 
-            font-size: 12px; 
-            border: none; 
-            background: transparent; 
-            color: white; 
-            width: 100%; 
-            box-sizing: border-box; 
-            text-align: center; 
-            min-width: 60px; 
-        }
-        
-        .map-table input:focus { 
-            background: #1e293b; 
-            outline: none; 
-        }
-        
-        .map-select { 
-            font-size: 11px; 
-            padding: 4px; 
-            background: #1e293b; 
-            color: white; 
-            border: 1px solid #3b82f6; 
-            cursor: pointer; 
-            text-align: center; 
-            font-weight: bold; 
-            width: 110px;
-        }
-        
-        .col-auto-id { 
-            background: #020617; 
-            color: #10b981; 
-            font-weight: bold; 
-            pointer-events: none; 
-            text-align: center; 
-            width: 50px; 
-        }
-        
-        .del-btn { 
-            background: #ef4444; 
-            color: white; 
-            padding: 4px 8px; 
-            font-size: 10px; 
-            border: none; 
-            border-radius: 4px; 
-            cursor: pointer; 
-            white-space: nowrap; 
-        }
-        
-        .radio-group label { 
-            font-size: 12px; 
-            display: inline-flex; 
-            align-items: center; 
-            gap: 4px; 
-            cursor: pointer; 
-            color: white; 
-            font-weight: normal; 
-            margin-right: 8px;
-        }
         
         .print-only { display: none; }
         
@@ -424,84 +350,28 @@
                 display: block !important; 
             }
         }
+
+        .trip-vehicle-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 12px;
+            font-weight: normal;
+        }
+
+        .trip-vehicle-controls select {
+            width: auto;
+            padding: 4px;
+            margin: 0;
+            background: #fff;
+            color: #1e293b;
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            font-size: 11px;
+        }
     </style>
 </head>
 <body>
-
-<button id="showSidebarBtn" onclick="toggleSidebar()">☰ MENU E IMPOSTAZIONI</button>
-
-<div id="importerModal" class="modal-overlay">
-    <div class="modal-content">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-            <h2>🪄 Smart Data Mapper</h2>
-            <button onclick="closeImporter()" style="width: auto; background: none; color: #94a3b8; font-size: 20px; border:none; cursor:pointer;">✖</button>
-        </div>
-        
-        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
-            
-            <div class="card" style="border: 1px dashed #3b82f6;">
-                <label>OPZ. 1: TESTO LIBERO / DA AI</label>
-                <p style="font-size:10px; color:#94a3b8; margin-top:0; height: 25px;">Incolla i dati o la tabella generata da ChatGPT.</p>
-                <textarea id="rawTextInput" placeholder="Incolla qui..."></textarea>
-                <div style="display: flex; gap: 5px;">
-                    <button class="btn-primary" style="width: 50%; padding: 10px 5px; font-size: 11px;" onclick="parseRawText()">ANALIZZA TESTO</button>
-                    <button class="btn-ai" style="width: 50%; padding: 10px 5px; font-size: 11px;" onclick="copyTextWithPromptForAI()">ANALISI AI</button>
-                </div>
-            </div>
-            
-            <div class="card">
-                <label>OPZ. 2: FILE ORDINATO</label>
-                <p style="font-size:10px; color:#94a3b8; margin-top:0; height: 25px;">Carica Excel/CSV leggibili e strutturati.</p>
-                <input type="file" id="fileInp" accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel, text/csv, .csv">
-                <button class="btn-primary" onclick="parseExcelFile()">LEGGI FILE</button>
-                <select id="sheetSelector" style="display:none; margin-top:10px; border-color: #10b981;" onchange="handleSheetSelection()"></select>
-            </div>
-
-            <div class="card" style="border: 1px dashed #8b5cf6;">
-                <label style="color: #c4b5fd;">OPZ. 3: ISTRUZIONI PER AI</label>
-                <p style="font-size:10px; color:#94a3b8; margin-top:0; height: 25px;">Copia le istruzioni infallibili, incollale nell'AI e allega il file lì.</p>
-                <button class="btn-ai" style="margin-top: 25px;" onclick="copyPromptForAI()">📋 COPIA PROMPT PER AI</button>
-            </div>
-
-        </div>
-
-        <div id="validationArea" style="display: none; border-top: 1px solid #334155; padding-top: 15px;">
-            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 10px;">
-                <div>
-                    <label style="color: #10b981; font-size: 12px;">Mappa le Colonne</label>
-                    <p style="font-size: 11px; margin:0;">Usa "Compatta Righe" per rimuovere intestazioni inutili o righe vuote.</p>
-                </div>
-                <div style="display: flex; gap: 10px;">
-                    <div style="background: #0f172a; padding: 5px 10px; border-radius: 4px; border: 1px solid #3b82f6; display: flex; align-items: center; gap: 10px;">
-                        <span style="font-size: 10px; color: #3b82f6; font-weight: bold;">UNITÀ:</span>
-                        <div class="radio-group">
-                            <label><input type="radio" name="unitConvert" value="m"> m</label>
-                            <label><input type="radio" name="unitConvert" value="cm" checked> cm</label>
-                            <label><input type="radio" name="unitConvert" value="mm"> mm</label>
-                        </div>
-                    </div>
-                    <div style="background: #020617; padding: 5px 10px; border-radius: 4px; border: 1px solid #f59e0b; display: flex; align-items: center; gap: 10px;">
-                        <span style="font-size: 10px; color: #f59e0b; font-weight: bold;">DEFAULT VUOTI:</span>
-                        <input type="number" id="defaultDimVal" value="10" style="width: 50px; margin: 0; padding: 2px 5px;">
-                    </div>
-                </div>
-            </div>
-            
-            <div class="map-table-container">
-                <table class="map-table" id="valTable">
-                    <thead id="valTableHeader"></thead>
-                    <tbody id="valTableBody"></tbody>
-                </table>
-            </div>
-            
-            <div style="display: flex; gap: 10px; margin-top: 10px;">
-                <button class="btn-warning" onclick="addEmptyRow()">+ AGGIUNGI RIGA</button>
-                <button class="btn-compact" onclick="compactData()">🧹 COMPATTA RIGHE</button>
-                <button class="btn-success" style="margin-left:auto;" onclick="confirmImport()">✅ CONFERMA E AGGIUNGI</button>
-            </div>
-        </div>
-    </div>
-</div>
 
 <div id="guideModal" class="modal-overlay">
     <div class="modal-content" style="max-width: 600px; padding: 30px;">
@@ -511,7 +381,7 @@
         </div>
         <div style="font-size: 13px; line-height: 1.6; color: #e2e8f0; margin-top: 10px;">
             <p><b style="color: #3b82f6;">1. IMPORTAZIONE DATI</b><br>
-            Puoi incollare dati testuali, importare un Excel pulito, o usare l'<b>OPZ. 3</b> per copiare un Prompt infallibile da dare a ChatGPT/Gemini per sistemare file disordinati. Ricorda sempre di usare il pulsante <b>"Compatta Righe"</b> per filtrare le informazioni inutili prima di caricare.</p>
+            Le casse arrivano automaticamente in banchina se inviate da <b>CCE</b> (Opere Nude) o da <b>CCB</b> (Casse finite con Tara).</p>
 
             <p><b style="color: #10b981;">2. GESTIONE MANUALE CASSE (Vista Pianta)</b><br>
             • <b>Spostamento:</b> Trascina la cassa partendo dal suo centro.<br>
@@ -521,9 +391,9 @@
             <p><b style="color: #f59e0b;">3. VINCOLI DI IMPILAMENTO (Click sul quadratino in alto a sx)</b><br>
             Imposta le regole della cassa cliccando ripetutamente sul quadratino al suo interno:<br>
             ⬜ <b>Nessun Vincolo:</b> Impilabile ovunque.<br>
-            <span class="flag-icon" style="background: linear-gradient(to bottom, #cbd5e1 50%, #654321 50%); margin-left: 0;"></span> <b>Solo Fondo:</b> Obbligo a terra. Non le si può appoggiare nulla sopra.<br>
-            <span class="flag-icon" style="background: linear-gradient(to bottom, #cbd5e1 33%, #654321 33%, #654321 66%, #cbd5e1 66%); margin-left: 0;"></span> <b>Base Portante:</b> Obbligo a terra. Fa da base per altre casse.<br>
-            <span class="flag-icon" style="background: linear-gradient(to bottom, #654321 50%, #cbd5e1 50%); margin-left: 0;"></span> <b>Solo Top:</b> Non regge pesi. Va posizionata in cima alla colonna.</p>
+            <span class="flag-icon" style="background: linear-gradient(to bottom, #cbd5e1 50%, #654321 50%); margin-left: 0; display: inline-block; width: 10px; height: 10px; border: 1px solid #1e293b;"></span> <b>Solo Fondo:</b> Obbligo a terra. Non le si può appoggiare nulla sopra.<br>
+            <span class="flag-icon" style="background: linear-gradient(to bottom, #cbd5e1 33%, #654321 33%, #654321 66%, #cbd5e1 66%); margin-left: 0; display: inline-block; width: 10px; height: 10px; border: 1px solid #1e293b;"></span> <b>Base Portante:</b> Obbligo a terra. Fa da base per altre casse.<br>
+            <span class="flag-icon" style="background: linear-gradient(to bottom, #654321 50%, #cbd5e1 50%); margin-left: 0; display: inline-block; width: 10px; height: 10px; border: 1px solid #1e293b;"></span> <b>Solo Top:</b> Non regge pesi. Va posizionata in cima alla colonna.</p>
 
             <p><b style="color: #8b5cf6;">4. CODICE COLORI E SICUREZZA</b><br>
             • <b style="color: #ffffff;">Bianco:</b> Posizionata a terra in modo standard.<br>
@@ -538,36 +408,65 @@
 </div>
 
 <div id="sidebar">
-    <div style="display: flex; flex-direction: column; gap: 4px; justify-content: center; align-items: flex-start; margin-bottom: 10px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-            <div style="display: flex; align-items: center; gap: 8px;">
-                <h2 style="margin:0; color: #3b82f6; font-size: 1.4em;">Cuckoo Nest v14.27</h2>
-                <button onclick="openGuide()" style="background: #334155; color: #cbd5e1; border: none; border-radius: 50%; width: 22px; height: 22px; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; padding: 0;" title="Guida">?</button>
+    <div class="toggle-tab-app" onclick="toggleSidebar()">MENU CCN</div>
+    <div class="sidebar-content">
+        <div style="display: flex; flex-direction: column; gap: 4px; justify-content: center; align-items: flex-start; margin-bottom: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <h2 style="margin:0; color: #ef4444; font-size: 1.4em;">Cuckoo Nest v14.30</h2>
+                    <button onclick="openGuide()" style="background: #334155; color: #cbd5e1; border: none; border-radius: 50%; width: 22px; height: 22px; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; padding: 0;" title="Guida">?</button>
+                </div>
             </div>
-            <button onclick="toggleSidebar()" style="background: transparent; color: #94a3b8; border: 1px solid #475569; padding: 4px 8px; width: auto; font-size: 10px; margin: 0;">◀ NASCONDI</button>
+            <span style="font-style: italic; color: #94a3b8; font-size: 11px;">"Logistics & Cargo Nesting"</span>
         </div>
-        <span style="font-style: italic; color: #94a3b8; font-size: 11px;">"One Flew Over the Cuckoo's Nest"</span>
-    </div>
     
     <div class="card">
-        <label>Vano di carico (cm)</label>
+        <label>Impostazioni Vano di Carico Predefinito (cm)</label>
+        <p style="font-size: 9px; color: #64748b; margin-top: 0;">Usato per i nuovi viaggi in Auto-Nesting</p>
         <select id="capienzaPreset" onchange="loadCapienzaPreset()" style="margin-bottom: 8px;">
-            <option value="1">Vano di carico 1</option>
-            <option value="2">Vano di carico 2</option>
-            <option value="3">Vano di carico 3</option>
+            <optgroup label="Mezzi Stradali">
+                <option value="1">Furgone medio</option>
+                <option value="2">Furgone grande</option>
+                <option value="3" selected>Box 35q</option>
+                <option value="4">Camion 7.5 t</option>
+                <option value="5">Camion 18 t</option>
+                <option value="6">Semirimorchio</option>
+                <option value="7">Mega trailer</option>
+            </optgroup>
+            <optgroup label="Imbarcazioni">
+                <option value="8">Barca 1</option>
+                <option value="9">Barca 2</option>
+                <option value="10">Barca 3</option>
+                <option value="11">Barca 4</option>
+            </optgroup>
         </select>
         <div class="grid-3">
-            <input type="number" id="bL" onchange="saveCapienzaPreset()">
-            <input type="number" id="bP" onchange="saveCapienzaPreset()">
-            <input type="number" id="bH" onchange="saveCapienzaPreset()">
+            <div>
+                <label style="color: #64748b; margin-bottom: 2px;">Larghezza</label>
+                <input type="number" id="bL" onchange="saveCapienzaPreset()" title="Larghezza">
+            </div>
+            <div>
+                <label style="color: #64748b; margin-bottom: 2px;">Lunghezza</label>
+                <input type="number" id="bP" onchange="saveCapienzaPreset()" title="Lunghezza">
+            </div>
+            <div>
+                <label style="color: #64748b; margin-bottom: 2px;">Altezza</label>
+                <input type="number" id="bH" onchange="saveCapienzaPreset()" title="Altezza">
+            </div>
         </div>
         
-        <label style="margin-top: 10px;">Margini (cm)</label>
+        <label style="margin-top: 10px;">Margini Operativi (cm)</label>
         <div class="grid-3">
             <input type="number" id="mL" value="4">
             <input type="number" id="mP" value="4">
             <input type="number" id="mH" value="5">
         </div>
+    </div>
+
+    <div class="card" style="border-left: 4px solid #10b981; background: #064e3b; text-align: center; padding: 20px;">
+        <span style="font-size:30px;">📡</span><br>
+        <b style="color: #6ee7b7;">In attesa di Casse...</b><br>
+        <span style="font-size:10px; color:#a7f3d0;">Invia le casse da CCE o CCB. Appariranno in banchina in automatico.</span>
     </div>
 
     <div class="card" style="border-left: 4px solid #3b82f6;">
@@ -593,10 +492,6 @@
         </div>
     </div>
 
-    <div class="card" style="border-left: 4px solid #8b5cf6;">
-        <button class="btn-ai" onclick="openImporter()">🪄 IMPORTA DA FILE</button>
-    </div>
-
     <div class="card print-hide" style="border-left: 4px solid #10b981;">
         <button class="btn-success" onclick="rifaiNestingAuto()">2. AUTO NESTING (MULTI-STACK)</button>
     </div>
@@ -604,10 +499,12 @@
     <div id="log" class="print-hide">> Ambiente pronto. Premi Ctrl+Z per annullare.</div>
     
     <div style="margin-top: 15px; display: flex; flex-direction: column; gap: 5px;">
+        <button class="btn-success" style="border-width: 2px; padding: 12px; font-size: 13px;" onclick="syncWithCCE()">🔄 SINCRONIZZA CON CCE (Master DB)</button>
         <button class="btn-export print-hide" onclick="exportDataExcel()">📊 ESPORTA TABELLA (Dogana)</button>
         <button onclick="window.print()" class="print-hide" style="background: #64748b; color: white;">🖨️ STAMPA PDF</button>
         <button class="btn-warning print-hide" onclick="undoMove()">↩️ ANNULLA SPOSTAMENTO</button>
-        <button class="btn-ai print-hide" onclick="sendToCuckooView()">📱 INVIA A CUCKOO VIEW</button>
+<button class="btn-ai" onclick="sendToCuckooView()">📱 AGGIORNA VISTA GLOBALE (CCV)</button>
+    </div>
     </div>
 </div>
 
@@ -616,42 +513,47 @@
 </div>
 
 <script>
-// ==========================================
-// MEMORIA GLOBALE E UI
-// ==========================================
+function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('collapsed');
+    setTimeout(() => { window.dispatchEvent(new Event('resize')); }, 300);
+}
+
 let itemsMaster = [];
 let viaggi = [];
 let p5Instances = [];
 let tripCameras = {};
 let tripXray = {};
-let rawDataGrid = [];
-let colMappings = [];
 
 let activeFullscreenTrip = -1;
 let moveHistory = []; 
 let cassaIdCounter = 1;
 let globalBanchinaStackMode = 0;
-let currentWorkbook = null; 
 
 // PRESETS CAPIENZA
 let capienzaPresets = {
-    "1": { L: 700, P: 240, H: 250 },
-    "2": { L: 600, P: 220, H: 240 },
-    "3": { L: 500, P: 200, H: 220 }
+    "1": { L: 175, P: 300, H: 180, nome: "Furgone medio" },
+    "2": { L: 175, P: 420, H: 200, nome: "Furgone grande" },
+    "3": { L: 210, P: 430, H: 210, nome: "Box 35q" },
+    "4": { L: 245, P: 610, H: 240, nome: "Camion 7.5 t" },
+    "5": { L: 245, P: 820, H: 260, nome: "Camion 18 t" },
+    "6": { L: 245, P: 1360, H: 270, nome: "Semirimorchio" },
+    "7": { L: 245, P: 1360, H: 300, nome: "Mega trailer" },
+    "8": { L: 240, P: 700, H: 350, nome: "Barca 1" },
+    "9": { L: 240, P: 700, H: 350, nome: "Barca 2" },
+    "10": { L: 240, P: 700, H: 350, nome: "Barca 3" },
+    "11": { L: 240, P: 700, H: 350, nome: "Barca 4" }
 };
 
 window.onload = () => { 
-    if(!localStorage.getItem('boatload_guide_seen')) {
-        openGuide(); 
-    }
     initCapienza();
     updateGlobalFlagButton();
-
-    checkTransferQueue(); // Controlla subito se CCB ha inviato casse
+    checkTransferQueue(); 
     renderAll(); 
 };
 
-// ASCOLTATORE EVENTI REAL-TIME DA CCB
+// ==========================================
+// ASCOLTO CODA DI TRASFERIMENTO DA CCE/CCB
+// ==========================================
 window.addEventListener('storage', function(e) {
     if (e.key === 'cuckoo_nest_transfer_queue') {
         checkTransferQueue();
@@ -697,9 +599,18 @@ function writeLog(m, col = "#10b981") {
 function initCapienza() {
     let saved = localStorage.getItem('cuckoo_nest_capienza_presets');
     if(saved) {
-        capienzaPresets = JSON.parse(saved);
+        let parsed = JSON.parse(saved);
+        // Preserva i nuovi mezzi aggiunti anche se localStorage aveva solo i vecchi
+        for(let key in parsed) {
+            if(capienzaPresets[key]) {
+                capienzaPresets[key].L = parsed[key].L;
+                capienzaPresets[key].P = parsed[key].P;
+                capienzaPresets[key].H = parsed[key].H;
+            }
+        }
     }
-    let lastUsed = localStorage.getItem('cuckoo_nest_last_preset') || "1";
+    let lastUsed = localStorage.getItem('cuckoo_nest_last_preset') || "3";
+    if (!capienzaPresets[lastUsed]) lastUsed = "3";
     document.getElementById('capienzaPreset').value = lastUsed;
     loadCapienzaPreset(false);
 }
@@ -712,14 +623,80 @@ function loadCapienzaPreset(saveSelection = true) {
     if(saveSelection) {
         localStorage.setItem('cuckoo_nest_last_preset', val);
     }
+    renderAll();
 }
 
 function saveCapienzaPreset() {
     let val = document.getElementById('capienzaPreset').value;
-    capienzaPresets[val].L = parseFloat(document.getElementById('bL').value) || 700;
-    capienzaPresets[val].P = parseFloat(document.getElementById('bP').value) || 240;
-    capienzaPresets[val].H = parseFloat(document.getElementById('bH').value) || 250;
+    capienzaPresets[val].L = parseFloat(document.getElementById('bL').value) || 210;
+    capienzaPresets[val].P = parseFloat(document.getElementById('bP').value) || 430;
+    capienzaPresets[val].H = parseFloat(document.getElementById('bH').value) || 210;
     localStorage.setItem('cuckoo_nest_capienza_presets', JSON.stringify(capienzaPresets));
+    renderAll();
+}
+
+// Funzione chiamata quando l'utente cambia il selettore veicolo per un viaggio specifico
+function setTripVehicle(tripId, presetKey) {
+    let trip = viaggi.find(v => v.id === tripId);
+    if(trip) {
+        saveState();
+        trip.vehiclePreset = presetKey;
+        
+        let presetData = capienzaPresets[presetKey];
+        trip.L = presetData.L;
+        trip.P = presetData.P;
+        trip.H = presetData.H;
+        
+        writeLog(`Vano per il Viaggio #${tripId+1} impostato su ${presetData.nome} (${presetData.L}x${presetData.P}x${presetData.H})`);
+        
+        // Rimanda in banchina le casse allocate per ricalcolare con il nuovo veicolo
+        itemsMaster.forEach(i => { 
+            if (!i.isEntity && !i.manual) {
+                i.trip = -1; 
+                i.isChild = false; 
+                i.x = 9999; 
+                i.y = 9999;
+                i.z = 0; 
+            }
+        });
+        
+        setTimeout(() => { 
+            eseguiNesting(); 
+        }, 50);
+    }
+}
+
+// ==========================================
+// SINCRONIZZAZIONE RITORNO A CCE
+// ==========================================
+function syncWithCCE() {
+    if (itemsMaster.length === 0) return alert("Nessuna cassa da sincronizzare.");
+    
+    let dbRaw = localStorage.getItem('cuckoo_egg_db');
+    if(!dbRaw) return alert("Database CCE vuoto.");
+    
+    let db = JSON.parse(dbRaw); 
+    let updatedCount = 0;
+
+    itemsMaster.forEach(cassa => {
+        let operaId = null;
+        if(cassa.masterData && cassa.masterData.id) {
+            operaId = cassa.masterData.id;
+        }
+
+        if(operaId) {
+            let index = db.findIndex(o => o.id === operaId);
+            if(index !== -1) {
+                // Registra il viaggio della cassa nel DB CCE
+                let statoViaggio = cassa.trip !== -1 ? `Viaggio #${cassa.trip + 1}` : 'In Banchina';
+                db[index].camion = statoViaggio; // Salva la properties (per CCV)
+                updatedCount++;
+            }
+        }
+    });
+
+    localStorage.setItem('cuckoo_egg_db', JSON.stringify(db));
+    alert(`✅ Sincronizzazione completata!\n${updatedCount} opere aggiornate in CCE con lo stato di carico del Camion.`);
 }
 
 // ==========================================
@@ -741,20 +718,39 @@ function undoMove() {
         let lastStateStr = moveHistory.pop();
         itemsMaster = JSON.parse(lastStateStr);
         
-        viaggi = [];
+        // Ristruttura l'array dei viaggi preservando le impostazioni dei veicoli
         let tripMap = {};
         
         itemsMaster.forEach(i => {
             if (i.trip !== -1) {
                 if(!tripMap[i.trip]) {
-                    tripMap[i.trip] = [];
+                    // Cerca di recuperare la configurazione veicolo precedente per quel trip, se esiste
+                    let existingTrip = viaggi.find(v => v.id === i.trip);
+                    tripMap[i.trip] = {
+                        items: [],
+                        vehiclePreset: existingTrip ? existingTrip.vehiclePreset : "3"
+                    };
                 }
-                tripMap[i.trip].push(i);
+                tripMap[i.trip].items.push(i);
             }
         });
         
+        viaggi = [];
         for (let key in tripMap) {
-            viaggi.push({ id: parseInt(key), items: tripMap[key] });
+            let tripData = tripMap[key];
+            let vPreset = tripData.vehiclePreset;
+            if(!capienzaPresets[vPreset]) vPreset = "3";
+            
+            let vL = capienzaPresets[vPreset].L;
+            let vP = capienzaPresets[vPreset].P;
+            let vH = capienzaPresets[vPreset].H;
+            
+            viaggi.push({ 
+                id: parseInt(key), 
+                items: tripData.items,
+                vehiclePreset: vPreset,
+                L: vL, P: vP, H: vH
+            });
         }
         
         viaggi.sort((a, b) => a.id - b.id);
@@ -821,7 +817,7 @@ function aggiungiCassaManuale() {
         origP: p_cm, 
         origH: h_cm, 
         x: 9999, 
-        y: 20, 
+        y: 9999, 
         z: 0, 
         trip: -1, 
         manual: false, 
@@ -853,18 +849,8 @@ function closeGuide() {
 }
 
 function toggleSidebar() {
-    let s = document.getElementById('sidebar');
-    let btn = document.getElementById('showSidebarBtn');
-    if (s.style.display === 'none') {
-        s.style.display = 'flex';
-        btn.style.display = 'none';
-    } else {
-        s.style.display = 'none';
-        btn.style.display = 'block';
-    }
-    setTimeout(() => { 
-        window.dispatchEvent(new Event('resize')); 
-    }, 10);
+    document.getElementById('sidebar').classList.toggle('collapsed');
+    setTimeout(() => { window.dispatchEvent(new Event('resize')); }, 300);
 }
 
 function toggleFullscreen2D(tripId) {
@@ -876,480 +862,6 @@ function toggleFullscreen2D(tripId) {
     renderAll();
 }
 
-// ==========================================
-// SMART MAPPER E PROMPT AI
-// ==========================================
-const SELECT_OPTIONS = `
-    <option value="ignore">❌ Ignora</option>
-    <option value="id">🆔 ID</option>
-    <option value="l">↔️ Lunghezza</option>
-    <option value="p">↕️ Profondità</option>
-    <option value="h">⬆️ Altezza</option>
-    <option value="peso">⚖️ Peso (KG)</option>
-`;
-
-function copyTextWithPromptForAI() {
-    try {
-        let rawText = document.getElementById('rawTextInput').value;
-        if(!rawText || rawText.trim() === "") { 
-            alert("Incolla prima i dati da inviare all'AI nel riquadro."); 
-            return; 
-        }
-        
-        let prompt = `⚠️ ISTRUZIONI DI SISTEMA TASSATIVE ⚠️
-Agisci come un estrattore di dati logistici automatizzato.
-Riordina il testo disordinato fornito in fondo a questo messaggio.
-
-REGOLE DI ESTRAZIONE:
-1. ID Cassa: Trova il nome o codice. Se non c'è, crealo tu (es. "Cassa-01"). NON usare mai una dimensione come ID.
-2. Dimensioni (L, P, H): Trova Lunghezza, Profondità e Altezza. Estrai SOLO I NUMERI.
-3. Peso: Trova il peso in KG se presente. SOLO NUMERI. Lascia vuoto se non c'è.
-
-FORMATO DI OUTPUT OBBLIGATORIO:
-- DEVI usare il formato CSV, usando il Punto e Virgola (;) come separatore di colonna.
-- DEVI inserire TASSATIVAMENTE il simbolo speciale ### alla fine di ogni singola riga.
-- ASSOLUTAMENTE VIETATE le tabelle Markdown.
-- Nessun testo di saluto. Stampa DIRETTAMENTE i dati.
-- La prima riga DEVE essere esattamente questa: ID;L;P;H;PESO###
-
---- INIZIO DATI DA ANALIZZARE ---
-${rawText}
---- FINE DATI ---`;
-        
-        if (navigator.clipboard && window.isSecureContext) { 
-            navigator.clipboard.writeText(prompt).then(() => {
-                alert('✅ Testo copiato!\nIncollalo su ChatGPT o Gemini.');
-            }); 
-        } else { 
-            let t = document.createElement("textarea"); 
-            t.value = prompt; 
-            document.body.appendChild(t); 
-            t.select(); 
-            document.execCommand("copy"); 
-            t.remove(); 
-            alert('✅ Testo copiato!'); 
-        }
-    } catch(e) { 
-        alert("Errore copia."); 
-    }
-}
-
-function copyPromptForAI() {
-    let prompt = `⚠️ SEI IN MODALITÀ ASCOLTO - ISTRUZIONI TASSATIVE ⚠️
-Agisci come estrattore dati logistici. Inizierai SOLO quando invierò il file.
-
-REGOLE:
-1. ID Cassa: Trova il nome/codice.
-2. Dimensioni (L, P, H): Estrai SOLO NUMERI.
-3. Peso: Trova peso in KG. SOLO NUMERI.
-
-FORMATO OUTPUT:
-- CSV con separatore Punto e Virgola (;).
-- Inserisci ### a fine di OGNI riga.
-- VIETATE tabelle Markdown.
-- Prima riga: ID;L;P;H;PESO###
-
-Rispondi ESCLUSIVAMENTE: "Regole acquisite. In attesa del file."`;
-
-    if (navigator.clipboard && window.isSecureContext) { 
-        navigator.clipboard.writeText(prompt).then(() => {
-            alert('✅ Prompt copiato! Incollalo sull\'AI.');
-        }); 
-    } else { 
-        let t = document.createElement("textarea"); 
-        t.value = prompt; 
-        document.body.appendChild(t); 
-        t.select(); 
-        document.execCommand("copy"); 
-        t.remove(); 
-        alert('✅ Prompt copiato!'); 
-    }
-}
-
-function openImporter() { 
-    document.getElementById('importerModal').style.display = 'flex'; 
-}
-
-function closeImporter() { 
-    document.getElementById('importerModal').style.display = 'none'; 
-    document.getElementById('validationArea').style.display = 'none';
-    document.getElementById('rawTextInput').value = "";
-    document.getElementById('fileInp').value = "";
-    document.getElementById('sheetSelector').style.display = 'none';
-}
-
-function isRowEmpty(rowArr) { 
-    if(!rowArr || rowArr.length === 0) return true; 
-    return !rowArr.some(c => c !== undefined && c !== null && c.toString().trim() !== ""); 
-}
-
-function isValidNumber(val) { 
-    if (val === undefined || val === null || val.toString().trim() === "") return false; 
-    return !isNaN(parseFloat(val.toString().replace(/[^\d.,-]/g, '').replace(',', '.'))); 
-}
-
-function compactData() {
-    let idxL = colMappings.indexOf('l'); 
-    let idxP = colMappings.indexOf('p'); 
-    let idxH = colMappings.indexOf('h');
-    
-    if (idxL === -1 && idxP === -1 && idxH === -1) { 
-        alert("Mappa L, P o H prima di compattare."); 
-        return; 
-    }
-    
-    saveGridState();
-    let orig = rawDataGrid.length;
-    
-    rawDataGrid = rawDataGrid.filter(row => {
-        let lValid = idxL !== -1 && isValidNumber(row[idxL]);
-        let pValid = idxP !== -1 && isValidNumber(row[idxP]);
-        let hValid = idxH !== -1 && isValidNumber(row[idxH]);
-        return lValid || pValid || hValid;
-    });
-    
-    renderMapperTable(); 
-    alert(`Compattazione: eliminate ${orig - rawDataGrid.length} righe inutili.`);
-}
-
-function renderMapperTable() {
-    try {
-        let header = document.getElementById('valTableHeader'); 
-        let tbody = document.getElementById('valTableBody');
-        header.innerHTML = ''; 
-        tbody.innerHTML = '';
-        
-        if(rawDataGrid.length === 0) return;
-        
-        let trHead = document.createElement('tr'); 
-        trHead.innerHTML = `<th>⚙️ Auto-ID</th>`;
-        let numCols = rawDataGrid[0].length;
-        
-        if(colMappings.length !== numCols) {
-            colMappings = new Array(numCols).fill('ignore'); 
-        }
-
-        if (colMappings.every(m => m === 'ignore')) {
-            let firstRow = rawDataGrid[0].map(c => c ? c.toString().toLowerCase().trim() : "");
-            let found = false;
-            
-            for(let c = 0; c < numCols; c++) {
-                let val = firstRow[c]; 
-                if(!val) continue;
-                if (val === 'l' || val.startsWith('lun') || val.startsWith('len')) { colMappings[c] = 'l'; found = true; }
-                else if (val === 'p' || val === 'w' || val.startsWith('prof') || val.startsWith('lar') || val.startsWith('wid')) { colMappings[c] = 'p'; found = true; }
-                else if (val === 'h' || val.startsWith('alt') || val.startsWith('hei')) { colMappings[c] = 'h'; found = true; }
-                else if (val === 'id' || val.startsWith('nom') || val.startsWith('cas')) { colMappings[c] = 'id'; found = true; }
-                else if (val === 'peso' || val === 'kg' || val.startsWith('pes')) { colMappings[c] = 'peso'; found = true; }
-            }
-            
-            if (!found && numCols >= 3) {
-                let nIdx = 0;
-                for(let c = 0; c < Math.min(numCols, 4); c++) {
-                    if(firstRow[c] !== "" && isNaN(parseFloat(firstRow[c].replace(',','.'))) && !colMappings.includes('id')) {
-                        colMappings[c] = 'id';
-                    } else { 
-                        if(nIdx === 0) colMappings[c] = 'l'; 
-                        else if(nIdx === 1) colMappings[c] = 'p'; 
-                        else if(nIdx === 2) colMappings[c] = 'h'; 
-                        nIdx++; 
-                    }
-                }
-            }
-        }
-
-        for (let c = 0; c < numCols; c++) {
-            let th = document.createElement('th'); 
-            let sel = document.createElement('select'); 
-            sel.className = 'map-select'; 
-            sel.innerHTML = SELECT_OPTIONS; 
-            sel.value = colMappings[c]; 
-            sel.onchange = (e) => { colMappings[c] = e.target.value; };
-            th.appendChild(sel); 
-            trHead.appendChild(th);
-        }
-        
-        let thDel = document.createElement('th'); 
-        thDel.innerText = "Azioni"; 
-        trHead.appendChild(thDel); 
-        header.appendChild(trHead);
-
-        rawDataGrid.forEach((row, rIndex) => {
-            let tr = document.createElement('tr');
-            let tdFixed = document.createElement('td'); 
-            tdFixed.innerHTML = `<input class="col-auto-id" value="${String(itemsMaster.length + rIndex + 1).padStart(3, '0')}" readonly>`; 
-            tr.appendChild(tdFixed);
-            
-            for (let c = 0; c < numCols; c++) {
-                let td = document.createElement('td'); 
-                let val = (row[c] !== undefined && row[c] !== null) ? row[c] : "";
-                
-                let inp = document.createElement('input');
-                inp.type = "text";
-                inp.value = val;
-                inp.onchange = function() { 
-                    updateGridCell(rIndex, c, this.value); 
-                };
-                td.appendChild(inp);
-                tr.appendChild(td);
-            }
-            
-            let tdDel = document.createElement('td'); 
-            tdDel.innerHTML = `<button class="del-btn" onclick="removeRawRow(${rIndex})">🗑️</button>`; 
-            tdDel.style.textAlign = "center"; 
-            tr.appendChild(tdDel);
-            tbody.appendChild(tr);
-        });
-        document.getElementById('validationArea').style.display = 'block';
-    } catch(e) { 
-        console.error("Errore renderMapperTable:", e);
-        writeLog("Errore rendering tabella.", "#ef4444"); 
-    }
-}
-
-function updateGridCell(r, c, val) { 
-    rawDataGrid[r][c] = val; 
-}
-
-function removeRawRow(index) { 
-    rawDataGrid.splice(index, 1); 
-    renderMapperTable(); 
-}
-
-function addEmptyRow() { 
-    let n = rawDataGrid.length > 0 ? rawDataGrid[0].length : 4; 
-    rawDataGrid.push(new Array(n).fill("")); 
-    renderMapperTable(); 
-}
-
-function saveGridState() { 
-    for(let r = 0; r < rawDataGrid.length; r++) {
-        for(let c = 0; c < rawDataGrid[r].length; c++) { 
-            let inp = document.getElementById(`cell_${r}_${c}`); 
-            if(inp) {
-                rawDataGrid[r][c] = inp.value; 
-            }
-        } 
-    } 
-}
-
-function parseRawText() {
-    try {
-        let text = document.getElementById('rawTextInput').value.trim(); 
-        if(!text) return;
-        
-        let textLower = text.toLowerCase();
-        if (textLower.includes(" mm") || textLower.includes("(mm)")) {
-            document.querySelector('input[name="unitConvert"][value="mm"]').checked = true;
-        } else if (textLower.includes(" m") || textLower.includes("(m)")) {
-            document.querySelector('input[name="unitConvert"][value="m"]').checked = true;
-        } else {
-            document.querySelector('input[name="unitConvert"][value="cm"]').checked = true;
-        }
-
-        let lines = [];
-        if (text.includes('###')) {
-            lines = text.split('###');
-        } else {
-            lines = text.split(/[\r\n]+/);
-        }
-
-        rawDataGrid = [];
-        for (let i=0; i<lines.length; i++) {
-            let line = lines[i].replace(/\|/g, '\t').trim();
-            if(line === "" || line.startsWith('---') || line.match(/^[- \t]+$/)) continue;
-            
-            if (rawDataGrid.length === 0) {
-                let isHeader = /(lung|largh|prof|alt|peso|kg|id|codice|cassa)/i.test(line);
-                if (isHeader) {
-                    let hCols = line.split(/;|\t/); 
-                    if (hCols.length === 1) hCols = line.split(/\s+/); 
-                    rawDataGrid.push(hCols.slice(0, 10));
-                    continue;
-                }
-            }
-
-            let cols = line.split(/;|\t/);
-            if (cols.length >= 3 && cols.some(c => !isNaN(parseFloat(c.replace(',','.'))))) {
-                rawDataGrid.push(cols.slice(0, 10)); 
-            } else {
-                let matches = line.match(/\d+([.,]\d+)?/g);
-                if (matches && matches.length >= 3) {
-                    let idText = line; 
-                    matches.forEach(m => idText = idText.replace(m, '')); 
-                    idText = idText.replace(/[^\w\s-]/gi, '').replace(/\s+/g, ' ').trim();
-                    if(idText === "") idText = "Item";
-                    rawDataGrid.push([idText.substring(0,30), ...matches].slice(0, 10));
-                }
-            }
-        }
-        
-        if(rawDataGrid.length > 0) {
-            let maxCols = Math.min(10, Math.max(...rawDataGrid.map(r => r.length)));
-            rawDataGrid.forEach(r => { while(r.length < maxCols) r.push(""); }); 
-            colMappings = []; 
-            writeLog("Dati analizzati. Verifica e mappa le colonne."); 
-            renderMapperTable();
-        } else {
-            writeLog("Nessuna riga valida.", "#ef4444"); 
-        }
-    } catch(e) { writeLog("Errore analisi.", "#ef4444"); }
-}
-
-function parseExcelFile() {
-    try {
-        const file = document.getElementById('fileInp').files[0]; 
-        if(!file) return;
-        
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const data = new Uint8Array(e.target.result); 
-            currentWorkbook = XLSX.read(data, {type: 'array'}); 
-            
-            if(currentWorkbook.SheetNames.length > 1) {
-                let sheetSel = document.getElementById('sheetSelector');
-                sheetSel.innerHTML = '<option value="">-- Il file ha più fogli: Selezionane uno --</option>';
-                currentWorkbook.SheetNames.forEach(name => {
-                    sheetSel.innerHTML += `<option value="${name}">${name}</option>`;
-                });
-                sheetSel.style.display = 'block';
-                writeLog(`Trovati ${currentWorkbook.SheetNames.length} fogli nel file Excel. Scegline uno dal menu.`, "#3b82f6");
-            } else {
-                document.getElementById('sheetSelector').style.display = 'none';
-                processSheetData(currentWorkbook.SheetNames[0]);
-            }
-        };
-        reader.readAsArrayBuffer(file);
-    } catch (e) { 
-        writeLog("Errore Excel.", "#ef4444"); 
-    }
-}
-
-function handleSheetSelection() {
-    let sheetName = document.getElementById('sheetSelector').value;
-    if(sheetName) {
-        processSheetData(sheetName);
-    }
-}
-
-function processSheetData(sheetName) {
-    try {
-        const raw = XLSX.utils.sheet_to_json(currentWorkbook.Sheets[sheetName], {header: 1});
-        
-        rawDataGrid = [];
-        for(let i=0; i<raw.length; i++) {
-            if(raw[i] && Array.isArray(raw[i]) && raw[i].some(cell => cell !== undefined && cell !== null && cell !== "")) {
-                rawDataGrid.push(raw[i].slice(0,10)); 
-            }
-        }
-        
-        if(rawDataGrid.length > 0) {
-            let maxCols = Math.max(...rawDataGrid.map(r => r.length)); 
-            rawDataGrid.forEach(r => { while(r.length < maxCols) r.push(""); });
-            colMappings = []; 
-            writeLog(`Foglio "${sheetName}" importato correttamente.`); 
-            renderMapperTable();
-        } else {
-            writeLog(`Il foglio "${sheetName}" è vuoto.`, "#ef4444");
-        }
-    } catch(e) {
-        writeLog("Errore lettura foglio.", "#ef4444"); 
-    }
-}
-
-function confirmImport() {
-    try {
-        saveGridState(); 
-        
-        let hasL = colMappings.includes('l'); 
-        let hasP = colMappings.includes('p'); 
-        let hasH = colMappings.includes('h');
-        
-        if(!hasL || !hasP || !hasH) { 
-            alert("Mappa L, P e H per continuare!"); 
-            return; 
-        }
-
-        saveState(); 
-        
-        let unitSelected = document.querySelector('input[name="unitConvert"]:checked').value;
-        let multiplier = unitSelected === 'm' ? 100 : (unitSelected === 'mm' ? 0.1 : 1);
-        let defaultDim = parseFloat(document.getElementById('defaultDimVal').value) || 10;
-        
-        let addedCount = 0;
-
-        rawDataGrid.forEach((row, rIndex) => {
-            let generatedAutoId = String(itemsMaster.length + 1).padStart(3, '0');
-            let itm = { id: "", L: defaultDim, P: defaultDim, H: defaultDim, peso: "" }; 
-            
-            for(let c = 0; c < colMappings.length; c++) {
-                let map = colMappings[c]; 
-                let val = row[c];
-                
-                if(val === undefined || val === null || val.toString().trim() === "") continue;
-                
-                if(map === 'id') {
-                    itm.id = val.toString().trim();
-                }
-                if(map === 'l') { 
-                    let p = parseFloat(val.toString().replace(/[^\d.,-]/g, '').replace(',','.')); 
-                    if(!isNaN(p)) itm.L = p * multiplier; 
-                }
-                if(map === 'p') { 
-                    let p = parseFloat(val.toString().replace(/[^\d.,-]/g, '').replace(',','.')); 
-                    if(!isNaN(p)) itm.P = p * multiplier; 
-                }
-                if(map === 'h') { 
-                    let p = parseFloat(val.toString().replace(/[^\d.,-]/g, '').replace(',','.')); 
-                    if(!isNaN(p)) itm.H = p * multiplier; 
-                }
-                if(map === 'peso') { 
-                    let p = parseFloat(val.toString().replace(/[^\d.,-]/g, '').replace(',','.')); 
-                    if(!isNaN(p)) itm.peso = p; 
-                }
-            }
-            
-            if(itm.id === "") {
-                itm.id = `Cassa-${generatedAutoId}`;
-            }
-            
-            if(itm.L === defaultDim * multiplier && itm.P === defaultDim * multiplier && itm.H === defaultDim * multiplier && isNaN(parseFloat(row[colMappings.indexOf('l')]))) {
-                return;
-            }
-            
-            itemsMaster.push({ 
-                id: itm.id, 
-                autoId: generatedAutoId, 
-                L: itm.L, 
-                P: itm.P, 
-                H: itm.H, 
-                peso: itm.peso,
-                origL: itm.L, 
-                origP: itm.P, 
-                origH: itm.H, 
-                x: 9999, 
-                y: 20, 
-                z: 0, 
-                trip: -1, 
-                manual: false, 
-                stackMode: globalBanchinaStackMode, 
-                isChild: false 
-            });
-            addedCount++;
-        });
-        
-        closeImporter(); 
-        writeLog(`Aggiunti ${addedCount} carichi in Banchina.`); 
-        renderAll();
-        
-    } catch(e) { 
-        writeLog("Errore salvataggio.", "#ef4444"); 
-    }
-}
-
-// ----------------------------------------------------
-// NUOVO ESPORTA TABELLA (DOGANA) PER CUCKOO NEST
-// ----------------------------------------------------
 function exportDataExcel() {
     let validItems = itemsMaster.filter(i => !i.isEntity);
     if(validItems.length === 0) { 
@@ -1358,7 +870,6 @@ function exportDataExcel() {
     }
     
     try {
-        // Stesse identiche colonne di Cuckoo Box (CCB)
         const ws_data = [['ID Cassa', 'Descrizione', 'Lunghezza (cm)', 'Larghezza (cm)', 'Altezza (cm)', 'Volume (m3)', 'Peso Netto (kg)', 'Tara (kg)', 'Peso Lordo (kg)']];
         
         validItems.forEach(c => {
@@ -1366,8 +877,6 @@ function exportDataExcel() {
             let p = c.P;
             let h = c.H;
             let vol = (l * p * h) / 1000000;
-            
-            // In CCN "peso" è il peso totale (Lordo) del collo finito
             let pesoLordo = (c.peso !== undefined && c.peso !== "" && !isNaN(parseFloat(c.peso))) ? parseFloat(c.peso) : 0;
 
             ws_data.push([
@@ -1377,8 +886,8 @@ function exportDataExcel() {
                 p.toFixed(1), 
                 h.toFixed(1), 
                 vol.toFixed(3), 
-                "", // Peso Netto (gestito in CCB)
-                "", // Tara (gestita in CCB)
+                "", 
+                "", 
                 pesoLordo.toFixed(2)
             ]);
         });
@@ -1390,6 +899,45 @@ function exportDataExcel() {
         alert('Errore Excel: ' + error.message); 
     }
 }
+
+function sendToCuckooView(silent = false) {
+    if (itemsMaster.length === 0) { 
+        if(!silent) alert('Nessuna cassa presente nel piano di carico.'); 
+        return; 
+    }
+    
+    let mL = parseFloat(document.getElementById('mL').value) || 4;
+    let mP = parseFloat(document.getElementById('mP').value) || 4;
+    let mH = parseFloat(document.getElementById('mH').value) || 5;
+
+    const exportData = {
+        type: "CuckooNest",
+        version: "14.31",
+        timestamp: new Date().toISOString(),
+        margins: { L: mL, P: mP, H: mH },
+        tripsData: viaggi.map(v => {
+            let vPreset = v.vehiclePreset || "3"; 
+            let presetData = capienzaPresets[vPreset] || {nome: "Veicolo"};
+            return {
+                id: v.id,
+                name: `Viaggio #${v.id + 1} (${presetData.nome})`,
+                vehicle: { L: v.L, P: v.P, H: v.H },
+                items: v.items // CRUCIALE: Senza questo, CCV non riceve le casse!
+            };
+        }),
+        crates: itemsMaster 
+    };
+
+    let ccvDataRaw = localStorage.getItem('cuckoo_view_transfer_data'); 
+    let ccvData = ccvDataRaw ? JSON.parse(ccvDataRaw) : {};
+    
+    ccvData.ccn = exportData;
+    
+    localStorage.setItem('cuckoo_view_transfer_data', JSON.stringify(ccvData));
+    
+    if(!silent) alert(`✅ Piani di carico inviati con successo a Cuckoo View!\nApri l'app dal menu laterale (Viola).`);
+}
+
 // ==========================================
 // CORE MOTORE 3D E NESTING
 // ==========================================
@@ -1432,6 +980,7 @@ function rifaiNestingAuto() {
             i.manual = false; 
             i.isChild = false; 
             i.x = 9999; 
+            i.y = 9999;
             i.z = 0; 
         }
     });
@@ -1444,31 +993,54 @@ function rifaiNestingAuto() {
 
 function eseguiNesting() {
     try {
+        let oldViaggi = [...viaggi];
         viaggi = []; 
         let daPiazzare = itemsMaster.filter(i => i.trip === -1 && !i.isEntity); 
         daPiazzare.sort((a,b) => (b.L * b.P) - (a.L * a.P)); 
         
         let tIdx = 0;
 
+        let globalPreset = document.getElementById('capienzaPreset').value;
+
         while(daPiazzare.length > 0 && tIdx < 15) {
-            let v = { id: tIdx, items: [] }; 
+            // Cerca di mantenere le configurazioni veicolo per i viaggi che c'erano già
+            let vPreset = globalPreset;
+            if(!capienzaPresets[vPreset]) vPreset = "3"; // Fallback sicuro
+            
+            let vL = parseFloat(document.getElementById('bL').value) || 210;
+            let vP = parseFloat(document.getElementById('bP').value) || 430;
+            let vH = parseFloat(document.getElementById('bH').value) || 210;
+            
+            let oldTrip = oldViaggi.find(vt => vt.id === tIdx);
+            if(oldTrip && oldTrip.vehiclePreset) {
+                vPreset = oldTrip.vehiclePreset;
+                vL = capienzaPresets[vPreset].L;
+                vP = capienzaPresets[vPreset].P;
+                vH = capienzaPresets[vPreset].H;
+            }
+
+            let v = { 
+                id: tIdx, 
+                items: [],
+                vehiclePreset: vPreset,
+                L: vL, P: vP, H: vH
+            }; 
+            
             let occupatiTerra = []; 
             let cassePiazzateAdesso = 0; 
             
             for(let itm of daPiazzare) {
-                // Recupera le dimensioni di ingombro del veicolo e i margini globali
-                let bL = parseFloat(document.getElementById('bL').value) || 700;
-                let bP = parseFloat(document.getElementById('bP').value) || 240;
-                let bH = parseFloat(document.getElementById('bH').value) || 250;
+                // Recupera i margini globali
                 let mL = parseFloat(document.getElementById('mL').value) || 4;
                 let mP = parseFloat(document.getElementById('mP').value) || 4;
                 let mH = parseFloat(document.getElementById('mH').value) || 5;
 
-                let entraStandard = (itm.L + mL <= bL && itm.P + mP <= bP); 
-                let entraRuotata  = (itm.P + mL <= bL && itm.L + mP <= bP);
+                // Testiamo l'incastro basandoci sulle dimensioni di QUESTO SPECIFICO VEICOLO (v.L, v.P)
+                let entraStandard = (itm.L + mL <= v.L && itm.P + mP <= v.P); 
+                let entraRuotata  = (itm.P + mL <= v.L && itm.L + mP <= v.P);
                 
                 if (!entraStandard && !entraRuotata) { 
-                    if (tIdx === 0) writeLog(`Cassa ${itm.id} troppo grande!`, "#ef4444"); 
+                    if (tIdx === 0) writeLog(`Cassa ${itm.id} troppo grande per questo vano!`, "#ef4444"); 
                     continue; 
                 }
 
@@ -1497,7 +1069,7 @@ function eseguiNesting() {
                         basiStack.sort((a,b) => (b.z + b.H) - (a.z + a.H));
 
                         for(let base of basiStack) {
-                            if(cL <= base.L && cP <= base.P && (base.z + base.H + itm.H + mH) <= bH) {
+                            if(cL <= base.L && cP <= base.P && (base.z + base.H + itm.H + mH) <= v.H) {
                                 let targetZ = base.z + base.H + mH;
                                 let sameLevelItems = v.items.filter(c => Math.abs(c.z - targetZ) < 0.1);
                                 
@@ -1532,8 +1104,8 @@ function eseguiNesting() {
 
                     if(piazzata) continue;
 
-                    for(let y = 0; y <= bP - d; y += 5) { 
-                        for(let x = 0; x <= bL - w; x += 5) {
+                    for(let y = 0; y <= v.P - d; y += 5) { 
+                        for(let x = 0; x <= v.L - w; x += 5) {
                             if(!occupatiTerra.some(o => x < o.x1 && x + w > o.x0 && y < o.y1 && y + d > o.y0)) {
                                 itm.x = x; 
                                 itm.y = y; 
@@ -1621,10 +1193,14 @@ function renderAll() {
             container.appendChild(bCard);
         }
 
-        let viaggiDaMostrare = viaggi.length > 0 ? viaggi : [{ id: 0, items: [] }];
-        let currentBL = document.getElementById('bL').value || 700;
-        let currentBP = document.getElementById('bP').value || 240;
-        let currentBH = document.getElementById('bH').value || 250;
+        let viaggiDaMostrare = viaggi.length > 0 ? viaggi : [{ 
+            id: 0, 
+            items: [], 
+            vehiclePreset: document.getElementById('capienzaPreset').value, 
+            L: parseFloat(document.getElementById('bL').value) || 210, 
+            P: parseFloat(document.getElementById('bP').value) || 430, 
+            H: parseFloat(document.getElementById('bH').value) || 210 
+        }];
 
         viaggiDaMostrare.forEach((v, idx) => {
             if(tripXray[v.id] === undefined) tripXray[v.id] = false;
@@ -1649,6 +1225,27 @@ function renderAll() {
                 } 
             });
             let weightStr = hasWeight ? `${totalWeight.toFixed(2)} KG` : "N/A";
+
+            // Selettori Preset (Visibili solo se non stiamo stampando in PDF)
+            let presetOptions = Object.keys(capienzaPresets).map(key => {
+                let sel = v.vehiclePreset === key ? "selected" : "";
+                
+                let namePrefix = "";
+                let optVal = parseInt(key);
+                if (optVal >= 1 && optVal <= 5) namePrefix = "🚚 ";
+                else if (optVal >= 6 && optVal <= 11) namePrefix = "⛴️ ";
+
+                return `<option value="${key}" ${sel}>${namePrefix}${capienzaPresets[key].nome}</option>`;
+            }).join('');
+
+            let tripControlsHTML = isPrintingPDF ? "" : `
+                <div class="trip-vehicle-controls print-hide">
+                    Veicolo: 
+                    <select onchange="setTripVehicle(${v.id}, this.value)">
+                        ${presetOptions}
+                    </select>
+                </div>
+            `;
 
             let listHTML = `<table class="print-list-table">
                 <thead>
@@ -1680,8 +1277,11 @@ function renderAll() {
 
             card.innerHTML = `
                 <div class="trip-header">
-                    <span>VIAGGIO #${idx+1}</span>
-                    <span>Casse caricate: ${validItemsCount} | Peso Camion: ${weightStr}</span>
+                    <div style="display:flex; align-items:center; gap:15px;">
+                        <span>VIAGGIO #${idx+1}</span>
+                        ${tripControlsHTML}
+                    </div>
+                    <span>Casse caricate: ${validItemsCount} | Peso Totale: ${weightStr}</span>
                 </div>
                 <div class="trip-body">
                     <div class="canvas-3d" id="c3d-${idx}">
@@ -1698,7 +1298,7 @@ function renderAll() {
                     </div>
                 </div>
                 <div class="print-only" style="padding: 10px 20px;">
-                    <h3 style="margin-top: 0; margin-bottom: 5px; font-size: 12px; color: #1e293b;">Distinta di Carico - Viaggio #${idx+1} (Vano: ${currentBL}x${currentBP}x${currentBH} cm)</h3>
+                    <h3 style="margin-top: 0; margin-bottom: 5px; font-size: 12px; color: #1e293b;">Distinta di Carico - Viaggio #${idx+1} (Vano: ${v.L}x${v.P}x${v.H} cm)</h3>
                     ${validItemsCount > 0 ? listHTML : '<p style="font-size:10px;">Nessuna cassa a bordo.</p>'}
                 </div>
             `;
@@ -1717,6 +1317,9 @@ function renderAll() {
                 mainEl.scrollTop = savedScroll; 
             }
         }, 10);
+        
+        // AUTO-SYNC SILENZIOSO CON CCV
+        sendToCuckooView(true);
 
     } catch(e) { 
         console.error(e);
@@ -1784,8 +1387,8 @@ const sketch2D = (v, banchina, domId) => (p) => {
         canvasH = domNode.clientHeight || 400;
         p.resizeCanvas(canvasW, canvasH);
         
-        let bL = parseFloat(document.getElementById('bL').value) || 700;
-        let bP = parseFloat(document.getElementById('bP').value) || 240;
+        let bL = v.L || 700;
+        let bP = v.P || 240;
         let spazioX = bP + 300; 
         let spazioY = bL + 40; 
         sc = Math.min(canvasW / spazioX, canvasH / spazioY); 
@@ -1796,8 +1399,8 @@ const sketch2D = (v, banchina, domId) => (p) => {
         canvasW = domNode.clientWidth || 800; 
         canvasH = domNode.clientHeight || 400;
         
-        let bL = parseFloat(document.getElementById('bL').value) || 700;
-        let bP = parseFloat(document.getElementById('bP').value) || 240;
+        let bL = v.L || 700;
+        let bP = v.P || 240;
         let spazioX = bP + 300; 
         let spazioY = bL + 40; 
         sc = Math.min(canvasW / spazioX, canvasH / spazioY); 
@@ -1810,20 +1413,21 @@ const sketch2D = (v, banchina, domId) => (p) => {
         
         let startBanchinaY = (bP * sc + 40) / sc;
         
-        let banchinaNonPosizionata = banchina.filter(b => b.y === 9999 || b.x === 9999);
+        // BANCHINA FIX: Riposizionamento rigido e dinamico ogni volta
+        let banchinaDaOrdinare = banchina.filter(b => !b.isEntity);
         
         let spazioBanchinaW = (canvasW / sc) - (bP + 40);
         let numColonne = Math.max(2, Math.floor(spazioBanchinaW / 140)); 
         
         let stepY = 150;
-        let righeNecessarie = Math.ceil(banchinaNonPosizionata.length / numColonne);
+        let righeNecessarie = Math.ceil(banchinaDaOrdinare.length / numColonne);
         let spazioBanchinaH = (canvasH / sc) - 40;
         
         if ((righeNecessarie * stepY) > spazioBanchinaH) {
             stepY = Math.max(25, spazioBanchinaH / righeNecessarie);
         }
 
-        banchinaNonPosizionata.forEach((b, i) => { 
+        banchinaDaOrdinare.forEach((b, i) => { 
             let col = i % numColonne;
             let row = Math.floor(i / numColonne);
             b.y = startBanchinaY + (col * 140); 
@@ -1832,8 +1436,8 @@ const sketch2D = (v, banchina, domId) => (p) => {
     };
 
     p.draw = () => {
-        let bL = parseFloat(document.getElementById('bL').value) || 700;
-        let bP = parseFloat(document.getElementById('bP').value) || 240;
+        let bL = v.L || 700;
+        let bP = v.P || 240;
         
         p.background(255); 
         let cOffX = 20; 
@@ -2044,8 +1648,8 @@ const sketch2D = (v, banchina, domId) => (p) => {
 
     p.mouseReleased = () => {
         if(dragItm && !isPrintingPDF) {
-            let bL = parseFloat(document.getElementById('bL').value) || 700; 
-            let bP = parseFloat(document.getElementById('bP').value) || 240; 
+            let bL = v.L || 700; 
+            let bP = v.P || 240; 
             let mH = parseFloat(document.getElementById('mH').value) || 5;
             
             let isCurrentlyInBanchina = dragItm.y > bP; 
@@ -2129,11 +1733,23 @@ const sketch2D = (v, banchina, domId) => (p) => {
                                 }
                             });
                             for (let key in tripMap) {
-                                viaggi.push({ id: parseInt(key), items: tripMap[key] });
+                                let tData = tripMap[key];
+                                let oldTrip = viaggiDaMostrare.find(vt => vt.id === parseInt(key));
+                                let vPreset = oldTrip ? oldTrip.vehiclePreset : "3";
+                                viaggi.push({ 
+                                    id: parseInt(key), 
+                                    items: tData,
+                                    vehiclePreset: vPreset,
+                                    L: capienzaPresets[vPreset].L, 
+                                    P: capienzaPresets[vPreset].P, 
+                                    H: capienzaPresets[vPreset].H
+                                });
                             }
                             viaggi.sort((a, b) => a.id - b.id);
                             renderAll();
                         }, 10); 
+                    } else {
+                        renderAll();
                     }
                 } else {
                     let rDrag = getNavRules(dragItm.stackMode); 
@@ -2167,6 +1783,7 @@ const sketch2D = (v, banchina, domId) => (p) => {
                         dragItm.y = dragItm.safeY; 
                         dragItm.z = dragItm.safeZ; 
                         dragItm.isChild = dragItm.safeChild;
+                        if(dragItm.trip === -1) renderAll();
                     } else { 
                         dragItm.manual = true; 
                         let changed = (dragItm.trip !== v.id); 
@@ -2184,7 +1801,16 @@ const sketch2D = (v, banchina, domId) => (p) => {
                                     }
                                 });
                                 for (let key in tripMap) {
-                                    viaggi.push({ id: parseInt(key), items: tripMap[key] });
+                                    let oldTrip = viaggiDaMostrare.find(vt => vt.id === parseInt(key));
+                                    let vPreset = oldTrip ? oldTrip.vehiclePreset : "3";
+                                    viaggi.push({ 
+                                        id: parseInt(key), 
+                                        items: tripMap[key],
+                                        vehiclePreset: vPreset,
+                                        L: capienzaPresets[vPreset].L,
+                                        P: capienzaPresets[vPreset].P,
+                                        H: capienzaPresets[vPreset].H
+                                    });
                                 }
                                 viaggi.sort((a, b) => a.id - b.id);
                                 renderAll();
@@ -2223,8 +1849,8 @@ const sketch3D = (v, domId) => (p) => {
         p.background(isPrintingPDF ? 255 : 248); 
         p.orbitControl();
         
-        let bL = parseFloat(document.getElementById('bL').value) || 700; 
-        let bP = parseFloat(document.getElementById('bP').value) || 240;
+        let bL = v.L || 700; 
+        let bP = v.P || 240;
         let cam = tripCameras[v.id] || {x: 1, y: 0, z: 0.8}; 
         
         p.rotateX(cam.x); 
@@ -2264,36 +1890,6 @@ if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('./sw.js')
             .catch(err => console.log('Errore Service Worker:', err)); 
     });
-}
-
-// ----------------------------------------------------
-// INVIO DIRETTO A CUCKOO VIEW
-// ----------------------------------------------------
-function sendToCuckooView() {
-    if (itemsMaster.length === 0) { 
-        alert('Nessuna cassa presente.'); 
-        return; 
-    }
-    
-    let bL = parseFloat(document.getElementById('bL').value);
-    let bP = parseFloat(document.getElementById('bP').value);
-    let bH = parseFloat(document.getElementById('bH').value);
-    let mL = parseFloat(document.getElementById('mL').value);
-    let mP = parseFloat(document.getElementById('mP').value);
-    let mH = parseFloat(document.getElementById('mH').value);
-
-    // Salviamo tutto lo stato corrente esattamente com'è (viaggi calcolati e posizioni)
-    const exportData = {
-        type: "CuckooNest",
-        version: "14.27",
-        timestamp: new Date().toISOString(),
-        vehicle: { L: bL, P: bP, H: bH },
-        margins: { L: mL, P: mP, H: mH },
-        crates: itemsMaster // Contiene già i trip, le x, y, z e i flag isChild/isFlipped
-    };
-
-    localStorage.setItem('cuckoo_view_transfer_data', JSON.stringify(exportData));
-    alert(`✅ Piano di carico inviato con successo a Cuckoo View!\nApri l'app dal menu laterale.`);
 }
 </script>
 </body>

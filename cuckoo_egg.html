@@ -1,0 +1,1225 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cuckoo Egg v1.9 - Smart Editable Hub & Strict Routing</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#10b981">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
+    <style>
+        body { 
+            font-family: 'Inter', system-ui, -apple-system, sans-serif; 
+            margin: 0; 
+            background: #0f172a; 
+            color: white; 
+            display: flex; 
+            height: 100vh; 
+            overflow: hidden; 
+        }
+        
+        #sidebar { 
+            width: 360px; 
+            background: #1e293b; 
+            border-right: 1px solid #334155; 
+            display: flex; 
+            flex-shrink: 0; 
+            position: relative;
+            z-index: 100;
+            transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        #sidebar.collapsed {
+            margin-left: -360px;
+        }
+
+        .sidebar-content {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            overflow-y: auto;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .toggle-tab-app {
+            position: absolute;
+            left: 100%; /* Si attacca perfettamente al bordo esterno */
+            top: 15%;   /* Più in alto per non scontrarsi con la linguetta della Suite */
+            transform: translateY(-50%);
+            background: #1e293b;
+            color: #94a3b8;
+            padding: 20px 6px;
+            cursor: pointer;
+            border-radius: 0 8px 8px 0;
+            z-index: 1000;
+            font-weight: bold;
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            border: 1px solid #334155;
+            border-left: none;
+            box-shadow: 4px 0 6px rgba(0,0,0,0.4);
+            transition: 0.2s;
+            white-space: nowrap;
+        }
+        
+        .toggle-tab-app:hover {
+            background: #10b981; /* Verde CCE */
+            color: white;
+            border-color: #34d399;
+        }
+
+        #main { 
+            flex-grow: 1; 
+            padding: 20px; 
+            overflow: hidden; 
+            background: #0f172a; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 15px; 
+        }
+        
+        .card { 
+            background: #1e293b; 
+            border-radius: 8px; 
+            padding: 12px; 
+            border: 1px solid #334155; 
+        }
+
+        label { 
+            font-size: 10px; 
+            color: #94a3b8; 
+            font-weight: 800; 
+            text-transform: uppercase; 
+            margin-bottom: 5px; 
+            display: block; 
+        }
+        
+        button { 
+            cursor: pointer; 
+            padding: 10px; 
+            border: none; 
+            border-radius: 4px; 
+            font-weight: bold; 
+            width: 100%; 
+            transition: 0.2s; 
+            margin-top: 5px; 
+        }
+
+        .btn-primary { background: #10b981; color: white; }
+        .btn-primary:hover { background: #059669; }
+        .btn-ai { background: #8b5cf6; color: white; border: 1px solid #7c3aed; }
+        .btn-ai:hover { background: #7c3aed; }
+        .btn-warning { background: #f59e0b; color: white; }
+        .btn-export { background: #3b82f6; color: white; }
+        .btn-danger { background: #ef4444; color: white; }
+        .btn-danger:hover { background: #dc2626; }
+        .btn-compact { background: #0ea5e9; color: white; border: 1px solid #0284c7; }
+
+        .data-wrapper { 
+            flex-grow: 1; 
+            overflow: auto; 
+            background: #1e293b; 
+            border-radius: 8px; 
+            border: 1px solid #334155; 
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5); 
+        }
+
+        .master-table { 
+            width: 100%; 
+            border-collapse: separate; 
+            border-spacing: 0; 
+            font-size: 11px; 
+            white-space: nowrap; 
+        }
+
+        .master-table th { 
+            background: #020617; 
+            padding: 10px 8px; 
+            text-align: left; 
+            position: sticky; 
+            top: 0; 
+            z-index: 10; 
+            color: #94a3b8; 
+            border-bottom: 2px solid #10b981; 
+            border-right: 1px solid #334155;
+            cursor: pointer;
+            transition: 0.2s;
+            user-select: none;
+        }
+
+        .master-table th:hover {
+            background: #0f172a;
+            color: #f8fafc;
+        }
+
+        .master-table td { 
+            padding: 8px; 
+            border-bottom: 1px solid #334155; 
+            border-right: 1px solid #334155; 
+            color: #cbd5e1; 
+        }
+
+        td[contenteditable="true"] {
+            cursor: text;
+            transition: background 0.2s;
+        }
+        
+        td[contenteditable="true"]:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        
+        td[contenteditable="true"]:focus {
+            background: #0f172a;
+            outline: 2px solid #3b82f6;
+            color: white;
+            border-radius: 2px;
+        }
+        
+        .master-table th:nth-child(1), .master-table td:nth-child(1) { 
+            position: sticky; left: 0; background: #0f172a; z-index: 11; width: 30px; text-align: center; cursor: default;
+        }
+        .master-table th:nth-child(2), .master-table td:nth-child(2) { 
+            position: sticky; left: 38px; background: #0f172a; z-index: 11; border-right: 2px solid #10b981; font-weight: bold; color: #10b981;
+        }
+        .master-table th:nth-child(1), .master-table th:nth-child(2) { z-index: 12; background: #020617; } 
+        .master-table tr:hover td { background: #334155; color: white; }
+        .master-table tr.selected td { background: rgba(16, 185, 129, 0.15); }
+        .master-checkbox { width: 16px; height: 16px; cursor: pointer; accent-color: #10b981;}
+
+        .modal-overlay { 
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(15, 23, 42, 0.85); z-index: 10000; justify-content: center; align-items: center; backdrop-filter: blur(4px); 
+        }
+
+        .modal-content { 
+            position: relative; background: #1e293b; border: 1px solid #10b981; border-radius: 12px; padding: 25px; 
+            max-width: 95vw; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); 
+            display: flex; flex-direction: column; gap: 15px; 
+        }
+        .modal-small { max-width: 500px; border-color: #8b5cf6; }
+
+        #rawTextInput, #aiInstructions { 
+            width: 100%; background: #0f172a; border: 1px dashed #8b5cf6; color: #cbd5e1; 
+            padding: 10px; border-radius: 8px; resize: vertical; font-family: monospace; box-sizing: border-box; 
+        }
+        #rawTextInput { height: 120px; margin-bottom: 5px; border-color: #475569; }
+        #aiInstructions { height: 50px; border-color: #3b82f6; }
+        #aiMemory { 
+            width: 100%; background: #020617; border: 1px solid #f59e0b; color: #fcd34d; 
+            padding: 10px; border-radius: 8px; resize: vertical; font-family: monospace; height: 100px; box-sizing: border-box; 
+        }
+
+        .file-drop-area { 
+            width: 100%; padding: 25px; background: #020617; border: 2px dashed #10b981; color: white; 
+            border-radius: 8px; box-sizing: border-box; text-align: center; position: relative; transition: 0.2s;
+        }
+        .file-drop-area:hover { background: #0f172a; }
+        .file-drop-area input[type="file"] { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+        
+        input[type="password"], select { 
+            width: 100%; padding: 8px; background: #0f172a; border: 1px solid #334155; color: white; border-radius: 4px; box-sizing: border-box; margin-bottom: 5px; 
+        }
+        
+        .map-table-container { width: 100%; overflow-x: auto; max-height: 400px; border: 1px solid #334155; border-radius: 6px; margin-top: 10px;}
+        .map-table { width: 100%; border-collapse: collapse; white-space: nowrap; }
+        .map-table th { background: #0f172a; padding: 5px; text-align: center; position: sticky; top: 0; z-index: 10; border-bottom: 2px solid #10b981; }
+        .map-table td { padding: 2px; border-bottom: 1px solid #334155; border-right: 1px dashed #334155; }
+        
+        .map-table input { 
+            padding: 6px; margin: 0; font-size: 12px; border: none; background: transparent; 
+            color: white; width: 100%; box-sizing: border-box; text-align: center; min-width: 80px; 
+        }
+        .map-table input:focus { background: #1e293b; outline: none; }
+        
+        .map-select { font-size: 11px; padding: 4px; background: #1e293b; color: white; border: 1px solid #10b981; cursor: pointer; max-width: 150px;}
+        
+        .ai-reasoning { background: rgba(245, 158, 11, 0.1); color: #fcd34d; font-size: 10px; max-width: 250px; white-space: normal; line-height: 1.2; border-right: 2px solid #f59e0b !important; }
+
+        .stat-badge { background: #020617; border: 1px solid #334155; padding: 10px; border-radius: 8px; text-align: center; }
+        .stat-val { font-size: 24px; font-weight: 900; color: #10b981; }
+
+        .radio-group label { font-size: 12px; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; color: white; font-weight: normal; margin-right: 8px;}
+
+        #global-ai-loader { 
+            display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(15, 23, 42, 0.9); z-index: 9999; flex-direction: column; justify-content: center; align-items: center; border-radius: 12px; 
+        }
+        .loader-spinner { border: 6px solid #334155; border-top: 6px solid #8b5cf6; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+<div id="settingsModal" class="modal-overlay">
+    <div class="modal-content modal-small">
+        <h2 style="margin:0; color: #8b5cf6;">⚙️ AI & Memoria</h2>
+        <label>Google Gemini API Key</label>
+        <input type="password" id="apiKeyInput" placeholder="AIzaSy...">
+        
+        <label style="margin-top: 10px;">Seleziona il Modello AI</label>
+        <div style="display: flex; gap: 5px;">
+            <select id="aiModelSelector" style="border-color: #8b5cf6;">
+                <option value="">Clicca su CERCA per caricare i modelli</option>
+            </select>
+            <button class="btn-ai" style="width: auto; margin-top: 0; padding: 8px; font-size: 11px;" onclick="fetchAvailableModels(this)">🔄 CERCA</button>
+        </div>
+
+        <label style="margin-top: 15px; color: #f59e0b;">Libro delle Regole (Memoria AI)</label>
+        <p style="font-size: 10px; color: #94a3b8; margin-top: 0;">Scrivi qui le regole fisse che l'IA deve applicare SEMPRE.</p>
+        <textarea id="aiMemory" placeholder="- Se vedi 'Crate', ignoralo.&#10;- Converti sempre inches in cm.&#10;- Il campo 'Valore' è sempre in USD tranne se specificato."></textarea>
+
+        <div style="display: flex; gap: 10px; margin-top: 10px;">
+            <button class="btn-warning" onclick="document.getElementById('settingsModal').style.display='none'">ANNULLA</button>
+            <button class="btn-ai" onclick="saveSettings()">💾 SALVA IMPOSTAZIONI</button>
+        </div>
+    </div>
+</div>
+
+<div id="importerModal" class="modal-overlay">
+    <div class="modal-content">
+        <div id="global-ai-loader">
+            <div class="loader-spinner"></div>
+            <h3 style="color: #10b981; margin-top: 20px;">Cuckoo Brain sta ragionando...</h3>
+            <p id="ai-status-text" style="color: #cbd5e1; font-size: 12px; text-align:center;">Contatto server in corso...</p>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h2 style="margin:0; color: #10b981;">🥚 Importatore Universale</h2>
+            <button onclick="closeImporter()" style="background: none; color: #94a3b8; font-size: 20px; border:none; cursor:pointer; width:auto;">✖</button>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+            <div class="card" style="border-color: #10b981;">
+                <label style="color: #10b981; font-size: 12px;">1. CARICA UN FILE DAL COMPUTER</label>
+                <div class="file-drop-area">
+                    <span id="file-label" style="font-size: 13px; font-weight:bold;">📂 Clicca o trascina qui un file</span><br>
+                    <span style="font-size: 10px; color:#94a3b8;">Supporta: Excel (.xlsx, .csv), PDF e Immagini</span>
+                    <input type="file" id="fileInp" accept=".xlsx, .xls, .csv, .pdf, image/*" onchange="handleUniversalFileSelect(event)">
+                </div>
+                <select id="sheetSelector" style="display:none; width: 100%; margin-top:10px; padding:8px; background:#0f172a; color:white; border:1px solid #10b981;" onchange="handleSheetSelection()"></select>
+
+                <div id="action-buttons-excel" style="display:none; gap:5px; margin-top: 15px;">
+                    <button class="btn-primary" onclick="parseExcelFileClassic()">LETTURA STANDARD (Manuale)</button>
+                    <button class="btn-ai" onclick="runUniversalAI('excel')">🧠 FAI LEGGERE EXCEL ALL'IA</button>
+                </div>
+                <div id="action-buttons-binary" style="display:none; gap:5px; margin-top: 15px;">
+                    <button class="btn-ai" style="background:#10b981; border-color:#059669;" onclick="runUniversalAI('binary')">🧠 ESTRAI DATI DAL DOCUMENTO CON L'IA</button>
+                </div>
+            </div>
+            
+            <div class="card" style="border-color: #8b5cf6;">
+                <label style="color: #c4b5fd; font-size: 12px;">OPPURE INCOLLA DEL TESTO LIBERO</label>
+                <textarea id="rawTextInput" placeholder="Incolla mail, testi sparsi o dati da analizzare..." oninput="checkTextInput()"></textarea>
+                <label style="color: #c4b5fd; font-size: 12px; margin-top: 10px;">ISTRUZIONI EXTRA PER L'IA (Opzionale)</label>
+                <input type="text" id="aiInstructions" placeholder="Es: estrai solo i dipinti e ignora le sculture" style="padding: 8px;">
+                <button class="btn-ai" id="btn-extract-text" onclick="runUniversalAI('text')" style="margin-top: 10px; opacity: 0.5; pointer-events: none;">✨ ANALIZZA TESTO INCOLLATO</button>
+            </div>
+        </div>
+
+        <div id="validationArea" style="display: none; border-top: 1px solid #334155; padding-top: 15px;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 10px;">
+                <div>
+                    <label style="color: #10b981; font-size: 12px;">Mappa le Colonne</label>
+                    <p style="font-size: 11px; margin:0;">Le colonne completamente vuote sono state nascoste. Usa "Compatta Righe" per pulire.</p>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <div style="background: #0f172a; padding: 5px 10px; border-radius: 4px; border: 1px solid #10b981; display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 10px; color: #10b981; font-weight: bold;">UNITÀ DI MISURA (IN INGRESSO):</span>
+                        <div class="radio-group">
+                            <label><input type="radio" name="unitConvert" value="m"> m</label>
+                            <label><input type="radio" name="unitConvert" value="cm" checked> cm</label>
+                            <label><input type="radio" name="unitConvert" value="mm"> mm</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="map-table-container">
+                <table class="map-table" id="valTable">
+                    <thead id="valTableHeader"></thead>
+                    <tbody id="valTableBody"></tbody>
+                </table>
+            </div>
+            
+            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                <button class="btn-primary" style="width: auto;" onclick="addEmptyRow()">➕ AGGIUNGI RIGA</button>
+                <button class="btn-compact" style="width: auto;" onclick="compactData()">🧹 COMPATTA RIGHE VUOTE</button>
+                <button class="btn-success" style="margin-left:auto;" onclick="confirmImport()">✅ CONFERMA E IMPORTA NEL DATABASE</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="sidebar">
+    <div class="toggle-tab-app" onclick="toggleSidebar()">MENU CCE</div>
+    <div class="sidebar-content">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+            <h2 style="margin:0; color: #10b981; font-size: 1.4em;">Cuckoo Egg v1.9</h2>
+            <button onclick="document.getElementById('settingsModal').style.display='flex'" style="background: transparent; color: #8b5cf6; border: 1px solid #8b5cf6; padding: 4px 8px; width: auto; font-size: 10px;">⚙️ AI & MEM</button>
+        </div>
+        <span style="font-style: italic; color: #94a3b8; font-size: 11px;">"Master Editable Hub & Strict Routing"</span>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
+            <div class="stat-badge">
+                <div style="font-size:10px; color:#94a3b8;">TOTALE OPERE</div>
+                <div class="stat-val" id="stat-total">0</div>
+            </div>
+            <div class="stat-badge">
+                <div style="font-size:10px; color:#94a3b8;">SELEZIONATE</div>
+                <div class="stat-val" id="stat-selected" style="color: #3b82f6;">0</div>
+            </div>
+        </div>
+
+        <div class="card" style="margin-top: 10px; border-left: 4px solid #10b981;">
+            <label style="color: #6ee7b7;">Gestione Dati</label>
+            <button class="btn-primary" onclick="openImporter()">🪄 IMPORTA NUOVE OPERE</button>
+            <button style="background: transparent; border: 1px solid #ef4444; color: #ef4444; margin-top: 10px;" onclick="svuotaDB()">🗑️ SVUOTA DATABASE</button>
+        </div>
+
+        <div class="card" style="border-left: 4px solid #3b82f6; margin-top: auto;">
+            <label style="color: #60a5fa;">Distribuisci Opere Selezionate</label>
+            <p style="font-size:10px; color:#94a3b8; margin-top:0;">Il sistema inoltrerà solo le righe dotate delle dimensioni minime richieste per il calcolo.</p>
+            <div style="display: flex; gap: 5px;">
+                <button class="btn-export" style="font-size: 11px; padding: 10px;" onclick="sendSelectedToCCB()">📦 A PRODUZIONE (CCB)</button>
+                <button class="btn-danger" style="font-size: 11px; padding: 10px;" onclick="sendSelectedToCCN()">🚚 A LOGISTICA (CCN)</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="main">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h3 style="margin:0; color:#e2e8f0;">Elenco Generale (Modificabile e Ordinabile)</h3>
+        <input type="text" id="searchBar" placeholder="🔍 Cerca ID, Titolo, Autore o Cassa..." style="width: 300px; margin:0;" onkeyup="renderMainTable()">
+    </div>
+    
+    <div class="data-wrapper">
+        <table class="master-table">
+            <thead>
+                <tr>
+                    <th rowspan="2"><input type="checkbox" class="master-checkbox" id="selectAllCb" onchange="toggleSelectAll(this)"></th>
+                    <th rowspan="2" onclick="sortByCol('id')" title="Ordina per ID">ID / INV ↕️</th>
+                    <th colspan="7" onclick="sortByGroup('id')" title="Ordina per dati più completi in questa sezione" style="text-align:center; background:#1e3a8a; color:white; border-bottom:none;">🎨 Identificazione (Object ID) ↕️</th>
+                    <th colspan="8" onclick="sortByGroup('dim')" title="Ordina per dati più completi in questa sezione" style="text-align:center; background:#92400e; color:white; border-bottom:none;">📏 Dimensioni & Pesi (Sincronizzato da CCB) ↕️</th>
+                    <th colspan="8" onclick="sortByGroup('log')" title="Ordina per dati più completi in questa sezione" style="text-align:center; background:#4c1d95; color:white; border-bottom:none;">🌍 Dogana & Logistica ↕️</th>
+                </tr>
+                <tr>
+                    <th onclick="sortByCol('autore')" title="Ordina">Autore ↕️</th><th onclick="sortByCol('titolo')" title="Ordina">Titolo ↕️</th><th onclick="sortByCol('anno')" title="Ordina">Data ↕️</th><th onclick="sortByCol('tipologia')" title="Ordina">Tipologia ↕️</th><th onclick="sortByCol('tecnica')" title="Ordina">Tecnica ↕️</th><th onclick="sortByCol('soggetto')" title="Ordina">Soggetto ↕️</th><th onclick="sortByCol('firme')" title="Ordina">Firme ↕️</th>
+                    <th onclick="sortByCol('l_max_cassa')" title="Ordina">L Cassa ↕️</th><th onclick="sortByCol('p_max_cassa')" title="Ordina">P Cassa ↕️</th><th onclick="sortByCol('h_max_cassa')" title="Ordina">H Cassa ↕️</th><th onclick="sortByCol('tara')" title="Ordina">Tara ↕️</th><th onclick="sortByCol('peso')" title="Ordina">Peso Netto ↕️</th><th onclick="sortByCol('l_op')" title="Ordina">L Op. ↕️</th><th onclick="sortByCol('p_op')" title="Ordina">P Op. ↕️</th><th onclick="sortByCol('h_op')" title="Ordina">H Op. ↕️</th>
+                    <th onclick="sortByCol('valore')" title="Ordina">Valore ↕️</th><th onclick="sortByCol('valuta')" title="Ordina">Valuta ↕️</th><th onclick="sortByCol('proprietario')" title="Ordina">Proprietario ↕️</th><th onclick="sortByCol('origine')" title="Ordina">Origine ↕️</th><th onclick="sortByCol('hs')" title="Ordina">HS Code ↕️</th><th onclick="sortByCol('condizioni')" title="Ordina">Condizioni ↕️</th><th onclick="sortByCol('cassa')" title="Ordina">Nome Cassa ↕️</th><th onclick="sortByCol('camion')" title="Ordina">Percorso ↕️</th>
+                </tr>
+            </thead>
+            <tbody id="masterTableBody"></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+let masterDB = [];
+let rawDataGrid = []; 
+let aiReasoningGrid = []; 
+let colMappings = [];
+
+let currentWorkbook = null; 
+let currentRawExcelCSV = ""; 
+let currentCleanedGrid = "";
+let currentAIFileBase64 = ""; 
+let currentAIFileMime = "";
+
+let currentSort = { field: null, dir: 'asc' };
+
+const EXPECTED_KEYS = [
+    "id", "autore", "titolo", "anno", "tipologia", "tecnica", "soggetto", "firme", 
+    "l_max", "p_max", "h_max", "peso", "l_op", "p_op", "h_op", 
+    "valore", "valuta", "proprietario", "origine", "hs", "condizioni", 
+    "cassa", "partenza", "destinazione",
+    "l_max_cassa", "p_max_cassa", "h_max_cassa", "tara", "camion"
+];
+
+const DB_SCHEMA = `
+    <option value="ignore">❌ Ignora Colonna</option>
+    <optgroup label="Identificazione">
+        <option value="id">🆔 ID / Inv</option>
+        <option value="autore">👤 Autore</option>
+        <option value="titolo">🖼️ Titolo</option>
+        <option value="anno">📅 Data / Epoca</option>
+        <option value="tipologia">🏺 Tipologia</option>
+        <option value="tecnica">🎨 Tecnica</option>
+        <option value="soggetto">👁️ Soggetto</option>
+        <option value="firme">✍️ Firme</option>
+    </optgroup>
+    <optgroup label="Dimensioni & Pesi (Opera)">
+        <option value="l_max">↔️ L Max</option>
+        <option value="p_max">↕️ P Max</option>
+        <option value="h_max">⬆️ H Max</option>
+        <option value="peso">⚖️ Peso Netto (kg)</option>
+        <option value="l_op">↔️ L Solo Opera</option>
+        <option value="p_op">↕️ P Solo Opera</option>
+        <option value="h_op">⬆️ H Solo Opera</option>
+    </optgroup>
+    <optgroup label="Cassa (Esterna & Tara)">
+        <option value="l_max_cassa">↔️ L Esterna Cassa</option>
+        <option value="p_max_cassa">↕️ P Esterna Cassa</option>
+        <option value="h_max_cassa">⬆️ H Esterna Cassa</option>
+        <option value="tara">⚖️ Tara Cassa (kg)</option>
+    </optgroup>
+    <optgroup label="Logistica & Dogana">
+        <option value="valore">💰 Valore</option>
+        <option value="valuta">💱 Valuta</option>
+        <option value="proprietario">🏛️ Proprietario</option>
+        <option value="origine">🌍 Origine</option>
+        <option value="hs">📜 HS Code</option>
+        <option value="condizioni">📝 Condizioni</option>
+        <option value="cassa">📦 Nome Cassa</option>
+        <option value="partenza">🏢 Partenza</option>
+        <option value="destinazione">🎯 Destinazione</option>
+    </optgroup>
+`;
+
+function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('collapsed');
+}
+
+window.onload = () => {
+    let saved = localStorage.getItem('cuckoo_egg_db');
+    if (saved) masterDB = JSON.parse(saved);
+    
+    let key = localStorage.getItem('gemini_api_key'); 
+    if (key) document.getElementById('apiKeyInput').value = key;
+    
+    let savedModel = localStorage.getItem('cuckoo_ai_model');
+    if (savedModel) { 
+        document.getElementById('aiModelSelector').innerHTML = `<option value="${savedModel}">${savedModel}</option>`; 
+        document.getElementById('aiModelSelector').value = savedModel; 
+    }
+    
+    let mem = localStorage.getItem('cuckoo_ai_memory'); 
+    if (mem) document.getElementById('aiMemory').value = mem;
+    
+    renderMainTable();
+};
+
+function saveSettings() {
+    localStorage.setItem('gemini_api_key', document.getElementById('apiKeyInput').value.trim());
+    localStorage.setItem('cuckoo_ai_model', document.getElementById('aiModelSelector').value);
+    localStorage.setItem('cuckoo_ai_memory', document.getElementById('aiMemory').value.trim());
+    document.getElementById('settingsModal').style.display='none'; 
+    alert("Impostazioni AI salvate.");
+}
+
+async function fetchAvailableModels(btn) {
+    let key = document.getElementById('apiKeyInput').value.trim();
+    if(!key) return alert("Inserisci la API Key.");
+    
+    let originalText = btn.innerText; 
+    btn.innerText = "⏳...";
+    
+    try {
+        let res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`); 
+        let data = await res.json();
+        
+        if(data.error) throw new Error(data.error.message);
+        
+        let sel = document.getElementById('aiModelSelector'); 
+        sel.innerHTML = ""; 
+        let count = 0;
+        
+        data.models.forEach(m => {
+            if(m.supportedGenerationMethods && m.supportedGenerationMethods.includes("generateContent")) {
+                let val = m.name.replace('models/', ''); 
+                sel.innerHTML += `<option value="${val}">${m.displayName} (${val})</option>`; 
+                count++;
+            }
+        });
+        
+        if(count === 0) alert("Nessun modello trovato."); 
+        else alert(`Trovati ${count} modelli!`);
+        
+    } catch(e) { 
+        alert("Errore: " + e.message); 
+    } finally { 
+        btn.innerText = originalText; 
+    }
+}
+
+window.addEventListener('storage', function(e) {
+    if (e.key === 'cuckoo_egg_db') {
+        let saved = localStorage.getItem('cuckoo_egg_db');
+        if(saved) {
+            masterDB = JSON.parse(saved);
+            renderMainTable();
+            let sBar = document.getElementById('searchBar');
+            let oldPh = sBar.placeholder;
+            sBar.placeholder = "✅ Dati Sincronizzati in background!";
+            setTimeout(()=> sBar.placeholder = oldPh, 3000);
+        }
+    }
+});
+
+function saveDB() {
+    localStorage.setItem('cuckoo_egg_db', JSON.stringify(masterDB)); 
+    updateStats();
+    let ccvData = localStorage.getItem('cuckoo_view_transfer_data');
+    if(ccvData) { 
+        let cv = JSON.parse(ccvData); 
+        cv.cce = masterDB; 
+        localStorage.setItem('cuckoo_view_transfer_data', JSON.stringify(cv)); 
+    } else { 
+        localStorage.setItem('cuckoo_view_transfer_data', JSON.stringify({cce: masterDB})); 
+    }
+}
+
+function updateStats() {
+    document.getElementById('stat-total').innerText = masterDB.length;
+    document.getElementById('stat-selected').innerText = masterDB.filter(o => o._selected).length;
+}
+
+function svuotaDB() { 
+    if(confirm("Vuoi davvero svuotare l'intero database di CCE?")) { 
+        masterDB = []; 
+        saveDB(); 
+        renderMainTable(); 
+    } 
+}
+
+function sortByCol(colKey) {
+    if (currentSort.field === colKey) {
+        currentSort.dir = currentSort.dir === 'asc' ? 'desc' : 'asc';
+    } else {
+        currentSort.field = colKey;
+        currentSort.dir = 'asc'; 
+    }
+
+    masterDB.sort((a, b) => {
+        let valA = a[colKey] !== undefined && a[colKey] !== null ? a[colKey] : "";
+        let valB = b[colKey] !== undefined && b[colKey] !== null ? b[colKey] : "";
+
+        let numA = parseFloat(valA);
+        let numB = parseFloat(valB);
+
+        if (!isNaN(numA) && !isNaN(numB) && valA !== "" && valB !== "") {
+            if (numA < numB) return currentSort.dir === 'asc' ? -1 : 1;
+            if (numA > numB) return currentSort.dir === 'asc' ? 1 : -1;
+            return 0;
+        }
+
+        valA = valA.toString().toLowerCase();
+        valB = valB.toString().toLowerCase();
+
+        if (valA < valB) return currentSort.dir === 'asc' ? -1 : 1;
+        if (valA > valB) return currentSort.dir === 'asc' ? 1 : -1;
+        return 0;
+    });
+    
+    renderMainTable();
+}
+
+function sortByGroup(groupName) {
+    let keys = [];
+    if (groupName === 'id') keys = ['autore', 'titolo', 'anno', 'tipologia', 'tecnica', 'soggetto', 'firme'];
+    else if (groupName === 'dim') keys = ['l_max_cassa', 'p_max_cassa', 'h_max_cassa', 'tara', 'peso', 'l_max', 'p_max', 'h_max', 'l_op', 'p_op', 'h_op'];
+    else if (groupName === 'log') keys = ['valore', 'valuta', 'proprietario', 'origine', 'hs', 'condizioni', 'cassa', 'partenza', 'destinazione'];
+
+    if (currentSort.field === groupName) {
+        currentSort.dir = currentSort.dir === 'desc' ? 'asc' : 'desc';
+    } else {
+        currentSort.field = groupName;
+        currentSort.dir = 'desc'; 
+    }
+
+    masterDB.sort((a, b) => {
+        let scoreA = keys.filter(k => a[k] !== undefined && a[k] !== null && a[k].toString().trim() !== "").length;
+        let scoreB = keys.filter(k => b[k] !== undefined && b[k] !== null && b[k].toString().trim() !== "").length;
+        
+        if (scoreA < scoreB) return currentSort.dir === 'desc' ? 1 : -1;
+        if (scoreA > scoreB) return currentSort.dir === 'desc' ? -1 : 1;
+        return 0;
+    });
+    
+    renderMainTable();
+}
+
+function updateOperaField(id, field, element) {
+    let index = masterDB.findIndex(o => o.id === id);
+    if (index !== -1) {
+        let val = element.innerText.trim();
+        if(['l_max', 'p_max', 'h_max', 'peso', 'tara', 'l_max_cassa', 'p_max_cassa', 'h_max_cassa'].includes(field)) {
+            let num = parseFloat(val.replace(/[^\d.,-]/g, '').replace(',','.'));
+            masterDB[index][field] = isNaN(num) ? "" : num;
+            element.innerText = masterDB[index][field]; 
+        } else {
+            masterDB[index][field] = val;
+        }
+        saveDB(); 
+    }
+}
+
+function renderMainTable() {
+    let tbody = document.getElementById('masterTableBody'); 
+    tbody.innerHTML = '';
+    
+    let search = document.getElementById('searchBar').value.toLowerCase();
+    let filtered = masterDB.filter(o => `${o.id||''} ${o.autore||''} ${o.titolo||''} ${o.cassa||''}`.toLowerCase().includes(search));
+    
+    if(filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="25" style="text-align:center; padding: 30px; color: #64748b;">Nessuna opera nel database.</td></tr>`;
+    }
+
+    filtered.forEach((opera) => {
+        let realIndex = masterDB.findIndex(m => m.id === opera.id);
+        let tr = document.createElement('tr'); 
+        if(opera._selected) tr.className = 'selected';
+        
+        const tdE = (field, customClass = "", extraStyle = "") => {
+            let val = opera[field] !== undefined && opera[field] !== null ? opera[field] : "";
+            return `<td class="${customClass}" style="${extraStyle}" contenteditable="true" onblur="updateOperaField('${opera.id}', '${field}', this)">${val}</td>`;
+        };
+
+        tr.innerHTML = `
+            <td><input type="checkbox" class="master-checkbox" ${opera._selected ? 'checked' : ''} onchange="toggleRowSelection(${realIndex}, this.checked)"></td>
+            ${tdE('id', '', 'font-weight:bold; color:#10b981;')}
+            ${tdE('autore')}
+            ${tdE('titolo', '', 'white-space:normal; min-width:150px;')}
+            ${tdE('anno')}
+            ${tdE('tipologia')}
+            ${tdE('tecnica')}
+            ${tdE('soggetto')}
+            ${tdE('firme')}
+            
+            ${tdE('l_max_cassa', '', 'color:#10b981; font-weight:bold;')}
+            ${tdE('p_max_cassa', '', 'color:#10b981; font-weight:bold;')}
+            ${tdE('h_max_cassa', '', 'color:#10b981; font-weight:bold;')}
+            ${tdE('tara', '', 'color:#f59e0b; font-weight:bold;')}
+            ${tdE('peso', '', 'color:#3b82f6; font-weight:bold;')}
+            ${tdE('l_op')}
+            ${tdE('p_op')}
+            ${tdE('h_op')}
+            
+            ${tdE('valore', '', 'color:#a78bfa;')}
+            ${tdE('valuta')}
+            ${tdE('proprietario')}
+            ${tdE('origine')}
+            ${tdE('hs')}
+            ${tdE('condizioni')}
+            ${tdE('cassa', '', 'color:#3b82f6; font-weight:bold;')}
+            ${tdE('camion', '', 'color:#ef4444; font-weight:bold;')}
+        `;
+        tbody.appendChild(tr);
+    });
+    updateStats();
+}
+
+function toggleRowSelection(idx, isChecked) { 
+    masterDB[idx]._selected = isChecked; 
+    saveDB(); 
+    renderMainTable(); 
+}
+
+function toggleSelectAll(cb) { 
+    masterDB.forEach(o => o._selected = cb.checked); 
+    saveDB(); 
+    renderMainTable(); 
+}
+
+// ----------------------------------------------------
+// ROTTA 1: CCE -> CCB (INVIA A PRODUZIONE)
+// ----------------------------------------------------
+function sendSelectedToCCB() {
+    let selected = masterDB.filter(o => o._selected);
+    if(selected.length === 0) return alert("Seleziona almeno un'opera da inviare.");
+    
+    // FILTRO RIGOROSO PER PRODUZIONE
+    let validSelected = selected.filter(o => {
+        if (!o.id || o.id.toString().trim() === "") return false;
+        let idLower = o.id.toString().toLowerCase().trim();
+        if (idLower === 'id' || idLower === 'inv' || idLower.includes('inventario')) return false; 
+        
+        // Verifica la presenza delle 3 misure dell'opera necessarie per costruire la cassa
+        let l = parseFloat(o.l_max);
+        let p = parseFloat(o.p_max);
+        let h = parseFloat(o.h_max);
+        
+        if (isNaN(l) || isNaN(p) || isNaN(h) || l <= 0 || p <= 0 || h <= 0) return false;
+        
+        return true; 
+    });
+
+    if (validSelected.length === 0) {
+        return alert("Errore di invio.\nLe righe selezionate sono vuote, sono intestazioni, oppure mancano delle dimensioni dell'opera (L, P, H) necessarie per calcolare la cassa.");
+    }
+
+    let payloadForCCB = validSelected.map(opera => {
+        return {
+            id: opera.id, 
+            titolo: opera.titolo,
+            L: parseFloat(opera.l_max) * 10,  
+            P: parseFloat(opera.p_max) * 10,
+            H: parseFloat(opera.h_max) * 10,
+            pesoNetto: parseFloat(opera.peso) || 0,
+            masterData: opera 
+        };
+    });
+    
+    let queue = JSON.parse(localStorage.getItem('cuckoo_box_import_queue') || '[]');
+    localStorage.setItem('cuckoo_box_import_queue', JSON.stringify(queue.concat(payloadForCCB)));
+    
+    masterDB.forEach(o => { if(o._selected) o._selected = false; }); 
+    saveDB(); 
+    renderMainTable();
+    
+    let skipped = selected.length - validSelected.length;
+    let skipMsg = skipped > 0 ? `\n(⚠️ ${skipped} righe scartate: mancavano le dimensioni L, P, H dell'opera)` : "";
+    alert(`✅ ${payloadForCCB.length} Opere valide inviate in Produzione!` + skipMsg);
+}
+
+// ----------------------------------------------------
+// ROTTA 2: CCE -> CCN (INVIA A LOGISTICA)
+// ----------------------------------------------------
+function sendSelectedToCCN() {
+    let selected = masterDB.filter(o => o._selected);
+    if(selected.length === 0) return alert("Seleziona almeno un'opera.");
+    
+    // FILTRO RIGOROSO PER LOGISTICA CAMION
+    let validSelected = selected.filter(o => {
+        if (!o.id || o.id.toString().trim() === "") return false;
+        let idLower = o.id.toString().toLowerCase().trim();
+        if (idLower === 'id' || idLower === 'inv' || idLower.includes('inventario')) return false; 
+        
+        // Verifica la presenza delle 3 misure esterne della CASSA per il caricamento
+        let lc = parseFloat(o.l_max_cassa);
+        let pc = parseFloat(o.p_max_cassa);
+        let hc = parseFloat(o.h_max_cassa);
+        
+        if(isNaN(lc) || isNaN(pc) || isNaN(hc) || lc <= 0 || pc <= 0 || hc <= 0) return false;
+        
+        return true; 
+    });
+
+    if (validSelected.length === 0) {
+        return alert("Errore di invio.\nNessuna delle righe selezionate possiede le dimensioni esterne della Cassa (L Cassa, P Cassa, H Cassa) necessarie per essere caricate sul camion.");
+    }
+
+    let payloadForCCN = validSelected.map(opera => {
+        let l_cm = parseFloat(opera.l_max_cassa);
+        let p_cm = parseFloat(opera.p_max_cassa);
+        let h_cm = parseFloat(opera.h_max_cassa);
+        let pesoLordo = (parseFloat(opera.peso) || 0) + (parseFloat(opera.tara) || 0);
+
+        return {
+            id: opera.cassa || `[${opera.id || 'OP'}]`, 
+            autoId: String(Math.floor(Math.random() * 1000)).padStart(3, '0'),
+            L: l_cm, P: p_cm, H: h_cm,
+            peso: pesoLordo,
+            origL: l_cm, origP: p_cm, origH: h_cm,
+            x: 9999, y: 20, z: 0, trip: -1, manual: false, stackMode: 0, isChild: false, isEntity: false,
+            masterData: opera 
+        };
+    });
+
+    let queue = JSON.parse(localStorage.getItem('cuckoo_nest_transfer_queue') || '[]');
+    localStorage.setItem('cuckoo_nest_transfer_queue', JSON.stringify(queue.concat(payloadForCCN)));
+    
+    masterDB.forEach(o => { if(o._selected) o._selected = false; }); 
+    saveDB(); 
+    renderMainTable();
+    
+    let skipped = selected.length - validSelected.length;
+    let skipMsg = skipped > 0 ? `\n(⚠️ ${skipped} righe scartate: mancavano le dimensioni esterne della Cassa)` : "";
+    alert(`✅ ${payloadForCCN.length} Casse valide inviate in Logistica!` + skipMsg);
+}
+
+// ----------------------------------------------------
+// IMPORTATORE UNIVERSALE POTENZIATO
+// ----------------------------------------------------
+function openImporter() { 
+    document.getElementById('importerModal').style.display = 'flex'; 
+}
+
+function closeImporter() { 
+    document.getElementById('importerModal').style.display = 'none'; 
+    document.getElementById('validationArea').style.display = 'none'; 
+}
+
+function checkTextInput() { 
+    let txt = document.getElementById('rawTextInput').value.trim(); 
+    let btn = document.getElementById('btn-extract-text'); 
+    if(txt !== "") { 
+        btn.style.opacity = '1'; 
+        btn.style.pointerEvents = 'auto'; 
+    } else { 
+        btn.style.opacity = '0.5'; 
+        btn.style.pointerEvents = 'none'; 
+    } 
+}
+
+function handleUniversalFileSelect(event) {
+    const file = event.target.files[0]; 
+    if(!file) return;
+    
+    let ext = file.name.split('.').pop().toLowerCase();
+    document.getElementById('file-label').innerHTML = `📄 <b style="color:#10b981;">${file.name}</b>`;
+    
+    document.getElementById('action-buttons-excel').style.display = 'none'; 
+    document.getElementById('action-buttons-binary').style.display = 'none'; 
+    document.getElementById('sheetSelector').style.display = 'none';
+    
+    if (ext === 'xlsx' || ext === 'xls' || ext === 'csv') {
+        const reader = new FileReader(); 
+        reader.onload = (e) => {
+            currentWorkbook = XLSX.read(new Uint8Array(e.target.result), {type: 'array'}); 
+            if(currentWorkbook.SheetNames.length > 1) {
+                let sheetSel = document.getElementById('sheetSelector'); 
+                sheetSel.innerHTML = '<option value="">-- Il file ha più fogli: scegline uno --</option>'; 
+                currentWorkbook.SheetNames.forEach(name => { sheetSel.innerHTML += `<option value="${name}">${name}</option>`; }); 
+                sheetSel.style.display = 'block';
+            } else { 
+                extractCleanGridForAI(currentWorkbook.Sheets[currentWorkbook.SheetNames[0]]);
+            }
+            document.getElementById('action-buttons-excel').style.display = 'flex';
+        }; 
+        reader.readAsArrayBuffer(file);
+    } else {
+        currentAIFileMime = file.type || "application/pdf";
+        const reader = new FileReader(); 
+        reader.onload = (e) => { 
+            currentAIFileBase64 = e.target.result.split(',')[1]; 
+            document.getElementById('action-buttons-binary').style.display = 'flex'; 
+        }; 
+        reader.readAsDataURL(file);
+    }
+}
+
+function handleSheetSelection() { 
+    let sheetName = document.getElementById('sheetSelector').value; 
+    if(sheetName) { 
+        extractCleanGridForAI(currentWorkbook.Sheets[sheetName]);
+    } 
+}
+
+function extractCleanGridForAI(sheet) {
+    let raw = XLSX.utils.sheet_to_json(sheet, {header: 1}); 
+    let output = []; 
+    for(let r of raw) { 
+        if(!r) continue; 
+        let rowCopy = [...r]; 
+        while(rowCopy.length > 0 && (rowCopy[rowCopy.length-1] === undefined || rowCopy[rowCopy.length-1] === null || rowCopy[rowCopy.length-1].toString().trim() === "")) { 
+            rowCopy.pop(); 
+        } 
+        if(rowCopy.length > 0) {
+            output.push(rowCopy.map(c => c !== undefined && c !== null ? c.toString().trim() : "").join(" | ")); 
+        }
+    } 
+    currentCleanedGrid = output.join("\n"); 
+}
+
+function parseExcelFileClassic() {
+    if(!currentWorkbook) return alert("Errore lettura file.");
+    
+    let sheetName = document.getElementById('sheetSelector').style.display === 'block' ? document.getElementById('sheetSelector').value : currentWorkbook.SheetNames[0];
+    if(!sheetName) return alert("Seleziona un foglio.");
+    
+    const raw = XLSX.utils.sheet_to_json(currentWorkbook.Sheets[sheetName], {header: 1}); 
+    rawDataGrid = []; 
+    aiReasoningGrid = [];
+    
+    for(let i=0; i<raw.length; i++) { 
+        if(raw[i] && Array.isArray(raw[i]) && raw[i].some(cell => cell !== undefined && cell !== null && cell !== "")) { 
+            rawDataGrid.push(raw[i].slice(0,50)); 
+            aiReasoningGrid.push(""); 
+        } 
+    }
+    
+    if(rawDataGrid.length > 0) { 
+        let maxCols = Math.max(...rawDataGrid.map(r => r.length)); 
+        rawDataGrid.forEach(r => { while(r.length < maxCols) r.push(""); }); 
+        colMappings = new Array(maxCols).fill('ignore'); 
+        renderMapperTable(); 
+    }
+}
+
+async function runUniversalAI(mode) {
+    let key = localStorage.getItem('gemini_api_key'); 
+    if(!key) { 
+        alert("⚠️ Inserisci la tua API Key di Gemini nelle Impostazioni."); 
+        document.getElementById('settingsModal').style.display='flex'; 
+        return; 
+    }
+    
+    let selectedModel = localStorage.getItem('cuckoo_ai_model') || 'gemini-1.5-flash';
+    let userGuidance = document.getElementById('aiInstructions').value.trim(); 
+    let aiMemory = localStorage.getItem('cuckoo_ai_memory') || "Nessuna regola salvata.";
+    
+    let systemPrompt = `Sei l'intelligenza artificiale di Cuckoo Suite.
+REGOLE STORICHE DA APPLICARE SEMPRE: ${aiMemory}
+ISTRUZIONI SPECIFICHE DELL'UTENTE: ${userGuidance !== "" ? userGuidance : "Nessuna istruzione extra."}
+OUTPUT RICHIESTO: ARRAY JSON valido contenente oggetti (NESSUN blocco markdown). Struttura:
+{ "dati_opera": { "id": "", "autore": "", "titolo": "", "anno": "", "tipologia": "", "tecnica": "", "soggetto": "", "firme": "", "l_max": "", "p_max": "", "h_max": "", "peso": "", "l_op": "", "p_op": "", "h_op": "", "valore": "", "valuta": "", "proprietario": "", "origine": "", "hs": "", "condizioni": "", "cassa": "", "partenza": "", "destinazione": "", "l_max_cassa": "", "p_max_cassa": "", "h_max_cassa": "", "tara": "" }, "ragionamento_ai": "Breve spiegazione." }
+Dimensioni e peso SOLO NUMERI.`;
+
+    let requestBody = { 
+        contents: [{parts: [{text: systemPrompt}]}], 
+        generationConfig: { response_mime_type: "application/json" }, 
+        safetySettings: [ 
+            { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" }, 
+            { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" }, 
+            { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" }, 
+            { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" } 
+        ] 
+    };
+    
+    if (mode === 'text') { 
+        let txt = document.getElementById('rawTextInput').value.trim(); 
+        if (!txt) return alert("Nessun testo da analizzare."); 
+        requestBody.contents[0].parts.push({text: "\n\n--- DATI ---\n" + txt}); 
+    } 
+    else if (mode === 'excel') { 
+        if (!currentCleanedGrid) return alert("Scegli un foglio Excel."); 
+        requestBody.contents[0].parts.push({text: "\n\n--- DATI ---\n" + currentCleanedGrid}); 
+    } 
+    else if (mode === 'binary') { 
+        if (!currentAIFileBase64) return alert("Nessun file caricato."); 
+        requestBody.contents[0].parts.push({ inline_data: { mime_type: currentAIFileMime, data: currentAIFileBase64 } }); 
+        requestBody.contents[0].parts.push({text: "\n\nAnalizza il documento ed estrai i dati delle opere."}); 
+    }
+
+    document.getElementById('global-ai-loader').style.display = 'flex'; 
+    document.getElementById('ai-status-text').innerText = `Contatto server (${selectedModel})...`;
+    
+    try {
+        let res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${key}`, { 
+            method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(requestBody) 
+        });
+        
+        let data = await res.json(); 
+        if(data.error) throw new Error(`${data.error.message}`);
+        
+        let aiText = data.candidates[0].content.parts[0].text; 
+        aiText = aiText.replace(/```json/gi, '').replace(/```/g, '').trim();
+        
+        let parsedArray = JSON.parse(aiText); 
+        if(!Array.isArray(parsedArray)) parsedArray = [parsedArray];
+        
+        rawDataGrid = []; 
+        aiReasoningGrid = [];
+        
+        parsedArray.forEach(obj => { 
+            let row = []; 
+            let dati = obj.dati_opera || obj; 
+            EXPECTED_KEYS.forEach(k => { row.push(dati[k] !== undefined ? dati[k] : ""); }); 
+            rawDataGrid.push(row); 
+            aiReasoningGrid.push(obj.ragionamento_ai || ""); 
+        });
+        
+        colMappings = [...EXPECTED_KEYS]; 
+        renderMapperTable(); 
+        
+        setTimeout(() => alert(`✨ Analisi completata!`), 300);
+        
+    } catch(e) { 
+        alert(`❌ Errore AI:\n\n${e.message}`); 
+    } finally { 
+        document.getElementById('global-ai-loader').style.display = 'none'; 
+    }
+}
+
+function saveGridState() { 
+    for(let r = 0; r < rawDataGrid.length; r++) { 
+        for(let c = 0; c < rawDataGrid[r].length; c++) { 
+            let inp = document.getElementById(`cell_${r}_${c}`); 
+            if(inp) rawDataGrid[r][c] = inp.value; 
+        } 
+    } 
+}
+
+function compactData() { 
+    saveGridState();
+    
+    let newGrid = []; 
+    let newReasoning = []; 
+    
+    rawDataGrid.forEach((row, i) => { 
+        if(row.some(cell => cell !== undefined && cell !== null && cell.toString().trim() !== "")) { 
+            newGrid.push(row); 
+            if(aiReasoningGrid.length > i) newReasoning.push(aiReasoningGrid[i]); 
+        } 
+    }); 
+    
+    rawDataGrid = newGrid; 
+    aiReasoningGrid = newReasoning; 
+    renderMapperTable(); 
+}
+
+function updateGridCell(r, c, val) { 
+    rawDataGrid[r][c] = val; 
+}
+
+function removeRawRow(index) { 
+    rawDataGrid.splice(index, 1); 
+    if(aiReasoningGrid.length > index) aiReasoningGrid.splice(index, 1);
+    renderMapperTable(); 
+}
+
+function addEmptyRow() { 
+    let n = rawDataGrid.length > 0 ? rawDataGrid[0].length : 5; 
+    rawDataGrid.push(new Array(n).fill("")); 
+    aiReasoningGrid.push("");
+    renderMapperTable(); 
+}
+
+function renderMapperTable() {
+    let header = document.getElementById('valTableHeader'); 
+    let tbody = document.getElementById('valTableBody'); 
+    header.innerHTML = ''; 
+    tbody.innerHTML = ''; 
+    
+    if(rawDataGrid.length === 0) return;
+    
+    let trHead = document.createElement('tr'); 
+    let numCols = rawDataGrid[0].length; 
+    let hasReasoning = aiReasoningGrid.some(r => r !== "" && r !== undefined);
+    
+    let hasDataMap = new Array(numCols).fill(false);
+    rawDataGrid.forEach(row => {
+        row.forEach((val, c) => {
+            if(val !== undefined && val !== null && val.toString().trim() !== "") hasDataMap[c] = true;
+        });
+    });
+    
+    if(colMappings.length !== numCols) {
+        colMappings = new Array(numCols).fill('ignore'); 
+    }
+
+    if (colMappings.every(m => m === 'ignore')) {
+        let firstRow = rawDataGrid[0].map(c => c ? c.toString().toLowerCase().trim() : "");
+        for(let c = 0; c < numCols; c++) {
+            let val = firstRow[c];
+            if(!val) continue;
+            
+            if (val === 'id' || val === 'inv' || val === 'inventario') colMappings[c] = 'id';
+            else if (val.includes('autore') || val.includes('artista')) colMappings[c] = 'autore';
+            else if (val.includes('titolo') || val.includes('opera')) colMappings[c] = 'titolo';
+            else if (val.includes('anno') || val.includes('data')) colMappings[c] = 'anno';
+            else if (val.includes('tecnica')) colMappings[c] = 'tecnica';
+            else if (val === 'l' || val.startsWith('lun') || val.includes('width')) colMappings[c] = 'l_max';
+            else if (val === 'p' || val.startsWith('pro') || val.includes('depth')) colMappings[c] = 'p_max';
+            else if (val === 'h' || val.startsWith('alt') || val.includes('height')) colMappings[c] = 'h_max';
+            else if (val.includes('peso') || val === 'kg') colMappings[c] = 'peso';
+            else if (val.includes('valore') || val.includes('assicura')) colMappings[c] = 'valore';
+            else if (val.includes('cassa')) colMappings[c] = 'cassa';
+        }
+    }
+
+    if(hasReasoning) { 
+        let thR = document.createElement('th'); 
+        thR.innerText = "🤖 AI"; 
+        trHead.appendChild(thR); 
+    }
+    
+    for (let c = 0; c < numCols; c++) { 
+        if(!hasDataMap[c]) continue; 
+        
+        let th = document.createElement('th'); 
+        let sel = document.createElement('select'); 
+        sel.className = 'map-select'; 
+        sel.innerHTML = DB_SCHEMA; 
+        sel.value = colMappings[c] !== 'ignore' ? colMappings[c] : 'ignore'; 
+        colMappings[c] = sel.value; 
+        sel.onchange = (e) => colMappings[c] = e.target.value; 
+        th.appendChild(sel); 
+        trHead.appendChild(th); 
+    }
+    
+    let thDel = document.createElement('th'); 
+    thDel.innerText = "Azioni"; 
+    trHead.appendChild(thDel); 
+    header.appendChild(trHead);
+    
+    rawDataGrid.forEach((row, rIndex) => {
+        let tr = document.createElement('tr');
+        
+        if(hasReasoning) { 
+            let tdR = document.createElement('td'); 
+            tdR.className = "ai-reasoning"; 
+            tdR.innerText = aiReasoningGrid[rIndex] || ""; 
+            tr.appendChild(tdR); 
+        }
+        
+        for (let c = 0; c < numCols; c++) { 
+            if(!hasDataMap[c]) continue; 
+            
+            let td = document.createElement('td'); 
+            let val = (row[c] !== undefined && row[c] !== null) ? row[c] : "";
+            
+            let inp = document.createElement('input');
+            inp.type = "text";
+            inp.value = val;
+            inp.onchange = function() { 
+                updateGridCell(rIndex, c, this.value); 
+            };
+            
+            td.appendChild(inp);
+            tr.appendChild(td); 
+        }
+        
+        let tdDel = document.createElement('td'); 
+        tdDel.innerHTML = `<button class="btn-danger" style="padding: 4px 8px; margin: 0; font-size: 10px; width: auto;" onclick="removeRawRow(${rIndex})">🗑️</button>`; 
+        tdDel.style.textAlign = "center";
+        tr.appendChild(tdDel); 
+        tbody.appendChild(tr);
+    }); 
+    
+    document.getElementById('validationArea').style.display = 'block';
+}
+
+function confirmImport() {
+    saveGridState();
+    
+    let unitSelected = document.querySelector('input[name="unitConvert"]:checked').value;
+    let multiplier = unitSelected === 'm' ? 100 : (unitSelected === 'mm' ? 0.1 : 1);
+    
+    let addedCount = 0;
+    
+    rawDataGrid.forEach((row) => {
+        let opera = { _selected: false }; 
+        let hasData = false;
+        
+        for(let c=0; c<colMappings.length; c++) {
+            let map = colMappings[c]; 
+            let val = row[c]; 
+            
+            if(map === 'ignore' || val === undefined || val === null || val.toString().trim() === "") continue;
+            
+            if(['l_max', 'p_max', 'h_max', 'l_op', 'p_op', 'h_op', 'l_max_cassa', 'p_max_cassa', 'h_max_cassa'].includes(map)) { 
+                let num = parseFloat(val.toString().replace(/[^\d.,-]/g, '').replace(',','.')); 
+                if(!isNaN(num)) opera[map] = parseFloat((num * multiplier).toFixed(1)); 
+            } 
+            else if (['peso', 'tara', 'valore'].includes(map)) {
+                let num = parseFloat(val.toString().replace(/[^\d.,-]/g, '').replace(',','.')); 
+                if(!isNaN(num)) opera[map] = num;
+            }
+            else { 
+                opera[map] = val.toString().trim(); 
+            }
+            hasData = true;
+        }
+        
+        if(hasData) { 
+            if(!opera.id) opera.id = `OP-${new Date().getTime().toString().slice(-6)}-${addedCount}`; 
+            masterDB.push(opera); 
+            addedCount++; 
+        }
+    });
+    
+    saveDB(); 
+    closeImporter(); 
+    renderMainTable(); 
+    alert(`✅ Importate ${addedCount} opere nel Database Master.`); 
+}
+</script>
+</body>
+</html>

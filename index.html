@@ -32,40 +32,38 @@
             padding: 30px 20px 20px 20px;
             z-index: 100;
             transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
         }
         
         #suite-sidebar.collapsed {
             margin-left: -260px;
         }
 
-        #toggleSuiteBtn {
+        /* Linguetta a scomparsa */
+        .toggle-tab-suite {
             position: absolute;
-            top: 15px;
-            left: 15px;
-            z-index: 900;
+            right: -30px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #1e293b;
+            color: #94a3b8;
+            padding: 20px 5px;
+            cursor: pointer;
+            border-radius: 0 8px 8px 0;
+            z-index: 1000;
+            font-weight: bold;
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            border: 1px solid #334155;
+            border-left: none;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.3);
+            transition: 0.2s;
+        }
+        
+        .toggle-tab-suite:hover {
             background: #3b82f6;
             color: white;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 6px;
-            font-weight: bold;
-            cursor: pointer;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-            display: none; 
-        }
-
-        @media (max-width: 1000px) {
-            #suite-sidebar {
-                position: absolute;
-                height: 100%;
-                box-shadow: 4px 0 15px rgba(0,0,0,0.5);
-            }
-            #toggleSuiteBtn {
-                display: block;
-            }
-            #suite-sidebar.collapsed + #toggleSuiteBtn {
-                display: block; 
-            }
+            border-color: #60a5fa;
         }
 
         .app-btn {
@@ -74,18 +72,26 @@
             border: 1px solid transparent;
             padding: 15px;
             text-align: left;
-            font-size: 14px;
+            font-size: 15px;
             font-weight: bold;
             border-radius: 8px;
             cursor: pointer;
             margin-bottom: 10px;
             transition: 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
         
         .app-btn:hover { background: #1e293b; color: white; }
-        .app-btn.active { background: #3b82f6; color: white; border-color: #60a5fa; box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3); }
 
-        /* NUOVO CONTENITORE IFRAME MULTIPLI IN BACKGROUND */
+        /* Colori personalizzati per ogni modulo */
+        .btn-cce:hover, .btn-cce.active { background: #f59e0b; color: white; border-color: #fbbf24; box-shadow: 0 4px 10px rgba(245, 158, 11, 0.3); } /* Giallo */
+        .btn-ccb:hover, .btn-ccb.active { background: #3b82f6; color: white; border-color: #60a5fa; box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3); } /* Blu */
+        .btn-ccn:hover, .btn-ccn.active { background: #ef4444; color: white; border-color: #f87171; box-shadow: 0 4px 10px rgba(239, 68, 68, 0.3); } /* Rosso */
+        .btn-ccv:hover, .btn-ccv.active { background: #8b5cf6; color: white; border-color: #a78bfa; box-shadow: 0 4px 10px rgba(139, 92, 246, 0.3); } /* Viola */
+
+        /* CONTENITORE IFRAME MULTIPLI IN BACKGROUND */
         #frames-container {
             flex-grow: 1;
             position: relative;
@@ -111,6 +117,8 @@
 <body>
 
     <div id="suite-sidebar">
+        <div class="toggle-tab-suite" onclick="toggleSuiteSidebar()">MENU SUITE</div>
+        
         <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 30px;">
             <img src="icon-192.png" alt="Logo" style="width: 40px; height: 40px; border-radius: 8px;" onerror="this.style.display='none'">
             <div>
@@ -119,28 +127,35 @@
             </div>
         </div>
 
-        <button class="app-btn active" onclick="loadApp('ccb', this)">
-            📦 Produzione (CCB)
+        <button class="app-btn btn-cce active" onclick="loadApp('cce', this)">
+            🥚 Cuckoo Egg
         </button>
-        <button class="app-btn" onclick="loadApp('ccn', this)">
-            🚚 Logistica (CCN)
+        <button class="app-btn btn-ccb" onclick="loadApp('ccb', this)">
+            📦 Cuckoo Box
         </button>
-        <button class="app-btn" onclick="loadApp('ccv', this)">
-            📱 Visualizzatore (CCV)
+        <button class="app-btn btn-ccn" onclick="loadApp('ccn', this)">
+            🚚 Cuckoo Nest
+        </button>
+        <button class="app-btn btn-ccv" onclick="loadApp('ccv', this)">
+            📱 Cuckoo View
         </button>
 
-        <div style="margin-top: auto; padding: 15px; background: #020617; border-radius: 8px; border: 1px solid #1e293b; font-size: 11px; color: #64748b;">
-            💡 <b>Info:</b> L'app ora mantiene le pagine in background. Non perderai il lavoro cambiando finestra.
+        <div style="margin-top: auto; padding: 15px; background: #020617; border-radius: 8px; border: 1px solid #1e293b; font-size: 11px; color: #cbd5e1; line-height: 1.5;">
+            <b style="color: #3b82f6; font-size: 12px;">🤖 Motore IA (Cuckoo Brain)</b><br>
+            Per estrarre i dati in automatico dai PDF e dagli Excel disordinati ti serve una chiave API gratuita di Google Gemini.<br>
+            <div style="margin-top: 8px; margin-bottom: 8px;">
+                <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color: #10b981; text-decoration: none; font-weight: bold; background: rgba(16, 185, 129, 0.1); padding: 4px 8px; border-radius: 4px; border: 1px solid #10b981; display: inline-block;">👉 Ottieni l'API Key da qui</a>
+            </div>
+            <span style="color: #64748b;">Una volta creata e copiata, incollala nelle impostazioni (⚙️ AI & MEM) di Cuckoo Egg.</span>
         </div>
     </div>
 
     <div id="frames-container">
-        <iframe id="frame-ccb" class="app-frame active" src="cuckoo_box.html"></iframe>
+        <iframe id="frame-cce" class="app-frame active" src="cuckoo_egg.html"></iframe>
+        <iframe id="frame-ccb" class="app-frame" src="cuckoo_box.html"></iframe>
         <iframe id="frame-ccn" class="app-frame" src="cuckoo_nest.html"></iframe>
         <iframe id="frame-ccv" class="app-frame" src="cuckoo_view.html"></iframe>
     </div>
-
-    <button id="toggleSuiteBtn" onclick="toggleSuiteSidebar()">☰ MENU APP</button>
 
     <script>
         function toggleSuiteSidebar() {
@@ -158,6 +173,7 @@
             btns.forEach(btn => btn.classList.remove('active'));
             btnElement.classList.add('active');
 
+            // Auto-collapse su schermi piccoli
             if (window.innerWidth < 1000) {
                 document.getElementById('suite-sidebar').classList.add('collapsed');
             }
