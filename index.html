@@ -127,17 +127,20 @@
             </div>
         </div>
 
-        <button class="app-btn btn-cce active" onclick="loadApp('cce', this)">
+        <button class="app-btn btn-ccv active" onclick="loadApp('ccv', this)">
+            📱 Cuckoo View
+        </button>
+
+        <button class="app-btn btn-cce" onclick="loadApp('cce', this)">
             🥚 Cuckoo Egg
         </button>
+
         <button class="app-btn btn-ccb" onclick="loadApp('ccb', this)">
             📦 Cuckoo Box
         </button>
+
         <button class="app-btn btn-ccn" onclick="loadApp('ccn', this)">
             🚚 Cuckoo Nest
-        </button>
-        <button class="app-btn btn-ccv" onclick="loadApp('ccv', this)">
-            📱 Cuckoo View
         </button>
 
         <div style="margin-top: auto; padding: 15px; background: #020617; border-radius: 8px; border: 1px solid #1e293b; font-size: 11px; color: #cbd5e1; line-height: 1.5;">
@@ -151,10 +154,10 @@
     </div>
 
     <div id="frames-container">
-        <iframe id="frame-cce" class="app-frame active" src="cuckoo_egg.html"></iframe>
+        <iframe id="frame-ccv" class="app-frame active" src="cuckoo_view.html"></iframe>
+        <iframe id="frame-cce" class="app-frame" src="cuckoo_egg.html"></iframe>
         <iframe id="frame-ccb" class="app-frame" src="cuckoo_box.html"></iframe>
         <iframe id="frame-ccn" class="app-frame" src="cuckoo_nest.html"></iframe>
-        <iframe id="frame-ccv" class="app-frame" src="cuckoo_view.html"></iframe>
     </div>
 
     <script>

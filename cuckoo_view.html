@@ -136,6 +136,7 @@
         </div>
         <div class="header-buttons" id="header-buttons">
             <button class="btn btn-restore" id="btn-restore" onclick="injectIntoSuite()">⏏️ INSUFFLA IN SUITE</button>
+            <button class="btn" style="background: #ef4444;" onclick="nuovoProgetto()">🆕 NUOVO PROGETTO</button>
             <button class="btn btn-load" onclick="document.getElementById('fileInp').click()">📂 CARICA PROGETTO</button>
             <button class="btn btn-share" onclick="exportProject('master')">💾 SALVA MASTER</button>
             <input type="file" id="fileInp" accept=".html,.ccb,.ccn" style="display: none;" onchange="handleFileUpload(event)">
@@ -381,13 +382,20 @@ function exportProject(mode) {
     let blob = new Blob([finalHtml], {type: "text/html"});
     
     let filename = `Cuckoo_${mode.toUpperCase()}_${new Date().getTime()}.html`;
-    let file = new File([blob], filename, {type: "text/html"});
-
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        navigator.share({ title: filename, files: [file] }).catch(() => triggerDownload(file));
-    } else {
-        triggerDownload(file);
-    }
+    
+    // DOWNLOAD DIRETTO FORZATO (Niente pannello di condivisione)
+    let url = URL.createObjectURL(blob);
+    let a = document.createElement('a');
+    a.style.display = 'none';
+    a.href = url;
+    a.download = filename;
+    
+    document.body.appendChild(a);
+    a.click();
+    
+    // Pulisce la memoria dopo il download
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
 }
 
 function triggerDownload(file) {
@@ -488,6 +496,74 @@ function injectIntoSuite() {
     alert("✅ Dati insufflati con successo!\nLe tue app locali (Egg, Box, Nest) sono state aggiornate con questi dati.");
 }
 
+function nuovoProgetto() {
+    if(confirm("⚠️ ATTENZIONE: Vuoi davvero creare un nuovo progetto?\n\nQuesto cancellerà TUTTI i dati attuali di Egg, Box, Nest e View dal tuo browser. Assicurati di aver salvato un file MASTER prima di procedere.")) {
+        
+        // Svuota l'intera memoria locale (Piazza pulita di tutto il sistema Cuckoo)
+        localStorage.removeItem('cuckoo_egg_db');
+        localStorage.removeItem('cuckoo_box_import_queue');
+        localStorage.removeItem('cuckoo_nest_transfer_queue');
+        localStorage.removeItem('cuckoo_view_transfer_data');
+        
+        // Resetta lo stato globale di CCV
+        GlobalProject = { cce: null, ccb: null, ccn: null };
+        
+        // Aggiorna l'interfaccia (mostrerà le schermate vuote)
+        updateUI();
+        alert("✨ Nuovo progetto pronto! Tutte le app sono state azzerate.");
+    }
+}
+
+function handleFileUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const contenuto = e.target.result;
+            let datiImportati;
+
+            // Controlla se il file è l'HTML salvato da Cuckoo
+            if (file.name.endsWith('.html') || contenuto.includes('<!DOCTYPE html>')) {
+                // Legge l'HTML in modo invisibile per cercare i dati nascosti
+                let parser = new DOMParser();
+                let doc = parser.parseFromString(contenuto, 'text/html');
+                let scriptTag = doc.getElementById('cuckoo-project-data');
+                
+                if (scriptTag) {
+                    // Decodifica i dati (da Base64 a testo leggibile)
+                    let b64Data = scriptTag.textContent.trim();
+                    let decoded = decodeURIComponent(escape(atob(b64Data)));
+                    datiImportati = JSON.parse(decoded);
+                } else {
+                    throw new Error("Dati di progetto non trovati nel file HTML.");
+                }
+            } else {
+                // Se per caso è un file JSON puro (retrocompatibilità)
+                datiImportati = JSON.parse(contenuto);
+            }
+            
+            // Rimette i dati nella memoria
+            localStorage.setItem('cuckoo_view_transfer_data', JSON.stringify(datiImportati));
+            
+            // Rimette i dati nel Master DB (Egg)
+            if(datiImportati.cce) {
+                localStorage.setItem('cuckoo_egg_db', JSON.stringify(datiImportati.cce));
+            }
+            
+            alert("✅ Progetto caricato con successo!\nPremi '⏏️ INSUFFLA IN SUITE' per inviare i dati a Egg, Box e Nest.");
+            window.location.reload(); 
+            
+        } catch (error) {
+            console.error("Errore di caricamento:", error);
+            alert("❌ Errore: Il file selezionato non è un progetto Cuckoo valido o è danneggiato.");
+        }
+    };
+    reader.readAsText(file);
+    event.target.value = "";
+}
+    
 // ==========================================
 // RENDER CCE (MASTER DB)
 // ==========================================

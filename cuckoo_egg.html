@@ -134,7 +134,8 @@
             border-collapse: separate; 
             border-spacing: 0; 
             font-size: 11px; 
-            white-space: nowrap; 
+            white-space: normal;
+            word-wrap: break-word; 
         }
 
         .master-table th { 
@@ -150,6 +151,7 @@
             cursor: pointer;
             transition: 0.2s;
             user-select: none;
+            min-width: 140px;
         }
 
         .master-table th:hover {
@@ -251,6 +253,80 @@
         }
         .loader-spinner { border: 6px solid #334155; border-top: 6px solid #8b5cf6; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .header-mapper {
+    background: transparent;
+    color: #94a3b8; /* Colore sobrio come i titoli standard */
+    border: none;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    width: 100%;
+    cursor: pointer;
+    appearance: none; /* Rimuove la freccetta standard per un look più pulito */
+}
+.header-mapper:hover { color: #10b981; }
+
+.mapper-row th {
+    background: #1e293b !important;
+    border-bottom: 2px solid #334155 !important;
+    padding: 10px 5px !important;
+}
+
+/* ==========================================
+   COLONNE FISSE (SPUNTA E CESTINO)
+   ========================================== */
+
+/* ==========================================
+   COLONNE FISSE (SPUNTA E CESTINO) - FIX DEF.
+   ========================================== */
+
+/* 1. Stile comune e blocco totale delle dimensioni */
+.master-table th:nth-child(1), .master-table td:nth-child(1),
+.master-table th:nth-child(2), .master-table td:nth-child(2) {
+    position: sticky;
+    z-index: 20;
+    background-color: #020617 !important; 
+    text-align: center;
+    padding: 8px 4px !important;
+    box-sizing: border-box !important; /* OBLIGA LA CELLA A NON ALLARGARSI OLTRE LA MISURA DATA */
+}
+
+/* 2. Assicura che la testata fissa stia sopra a tutto lo scroll */
+.master-table th:nth-child(1), .master-table th:nth-child(2) {
+    z-index: 30; 
+}
+
+/* 3. Posizionamento rigido 1° Colonna (Spunta) */
+.master-table th:nth-child(1), 
+.master-table td:nth-child(1) {
+    left: 0;
+    width: 45px !important;
+    min-width: 45px !important;
+    max-width: 45px !important;
+}
+
+/* 4. Posizionamento rigido 2° Colonna (Cestino) */
+.master-table th:nth-child(2), 
+.master-table td:nth-child(2) {
+    left: 45px !important; /* Si aggancia millimetricamente alla fine della prima (45px) */
+    width: 45px !important;
+    min-width: 45px !important;
+    max-width: 45px !important;
+    border-right: 2px solid #10b981 !important; 
+}
+
+/* 5. Fix trasparenza su righe selezionate */
+.master-table tr.selected td:nth-child(1),
+.master-table tr.selected td:nth-child(2) {
+    background-color: #020617 !important; 
+}
+
+/* 6. Stile per il Checkbox "Seleziona Tutto" in testata */
+.master-checkbox-all {
+    cursor: pointer;
+    accent-color: #10b981; 
+    transform: scale(1.2);
+}
     </style>
 </head>
 <body>
@@ -401,19 +477,30 @@
     <div class="data-wrapper">
         <table class="master-table">
             <thead>
-                <tr>
-                    <th rowspan="2"><input type="checkbox" class="master-checkbox" id="selectAllCb" onchange="toggleSelectAll(this)"></th>
-                    <th rowspan="2" onclick="sortByCol('id')" title="Ordina per ID">ID / INV ↕️</th>
-                    <th colspan="7" onclick="sortByGroup('id')" title="Ordina per dati più completi in questa sezione" style="text-align:center; background:#1e3a8a; color:white; border-bottom:none;">🎨 Identificazione (Object ID) ↕️</th>
-                    <th colspan="8" onclick="sortByGroup('dim')" title="Ordina per dati più completi in questa sezione" style="text-align:center; background:#92400e; color:white; border-bottom:none;">📏 Dimensioni & Pesi (Sincronizzato da CCB) ↕️</th>
-                    <th colspan="8" onclick="sortByGroup('log')" title="Ordina per dati più completi in questa sezione" style="text-align:center; background:#4c1d95; color:white; border-bottom:none;">🌍 Dogana & Logistica ↕️</th>
-                </tr>
-                <tr>
-                    <th onclick="sortByCol('autore')" title="Ordina">Autore ↕️</th><th onclick="sortByCol('titolo')" title="Ordina">Titolo ↕️</th><th onclick="sortByCol('anno')" title="Ordina">Data ↕️</th><th onclick="sortByCol('tipologia')" title="Ordina">Tipologia ↕️</th><th onclick="sortByCol('tecnica')" title="Ordina">Tecnica ↕️</th><th onclick="sortByCol('soggetto')" title="Ordina">Soggetto ↕️</th><th onclick="sortByCol('firme')" title="Ordina">Firme ↕️</th>
-                    <th onclick="sortByCol('l_max_cassa')" title="Ordina">L Cassa ↕️</th><th onclick="sortByCol('p_max_cassa')" title="Ordina">P Cassa ↕️</th><th onclick="sortByCol('h_max_cassa')" title="Ordina">H Cassa ↕️</th><th onclick="sortByCol('tara')" title="Ordina">Tara ↕️</th><th onclick="sortByCol('peso')" title="Ordina">Peso Netto ↕️</th><th onclick="sortByCol('l_op')" title="Ordina">L Op. ↕️</th><th onclick="sortByCol('p_op')" title="Ordina">P Op. ↕️</th><th onclick="sortByCol('h_op')" title="Ordina">H Op. ↕️</th>
-                    <th onclick="sortByCol('valore')" title="Ordina">Valore ↕️</th><th onclick="sortByCol('valuta')" title="Ordina">Valuta ↕️</th><th onclick="sortByCol('proprietario')" title="Ordina">Proprietario ↕️</th><th onclick="sortByCol('origine')" title="Ordina">Origine ↕️</th><th onclick="sortByCol('hs')" title="Ordina">HS Code ↕️</th><th onclick="sortByCol('condizioni')" title="Ordina">Condizioni ↕️</th><th onclick="sortByCol('cassa')" title="Ordina">Nome Cassa ↕️</th><th onclick="sortByCol('camion')" title="Ordina">Percorso ↕️</th>
-                </tr>
-            </thead>
+    <tr class="mapper-row">
+        <th style="width: 40px;">🛒</th> <th><select class="header-mapper" onchange="reassignColumn('id', this.value)"><option value="id" selected>🆔 ID / INV</option></select></th>
+        <th><select class="header-mapper" onchange="reassignColumn('autore', this.value)"><option value="autore" selected>👤 AUTORE</option></select></th>
+        <th><select class="header-mapper" onchange="reassignColumn('titolo', this.value)"><option value="titolo" selected>🖼️ TITOLO</option></select></th>
+        <th><select class="header-mapper" onchange="reassignColumn('l_max', this.value)"><option value="l_max" selected>↔️ L (OP)</option></select></th>
+        <th><select class="header-mapper" onchange="reassignColumn('p_max', this.value)"><option value="p_max" selected>↕️ P (OP)</option></select></th>
+        <th><select class="header-mapper" onchange="reassignColumn('h_max', this.value)"><option value="h_max" selected>⬆️ H (OP)</option></select></th>
+        <th><select class="header-mapper" onchange="reassignColumn('peso', this.value)"><option value="peso" selected>⚖️ PESO (KG)</option></select></th>
+        <th><select class="header-mapper" onchange="reassignColumn('l_max_cassa', this.value)"><option value="l_max_cassa" selected>↔️ L (CA)</option></select></th>
+        <th><select class="header-mapper" onchange="reassignColumn('p_max_cassa', this.value)"><option value="p_max_cassa" selected>↕️ P (CA)</option></select></th>
+        <th><select class="header-mapper" onchange="reassignColumn('h_max_cassa', this.value)"><option value="h_max_cassa" selected>⬆️ H (CA)</option></select></th>
+        <th><select class="header-mapper" onchange="reassignColumn('tara', this.value)"><option value="tara" selected>⚖️ TARA</option></select></th>
+        <th><select class="header-mapper" onchange="reassignColumn('note', this.value)"><option value="note" selected>📝 NOTE</option></select></th>
+        <th><select class="header-mapper" onchange="reassignColumn('valore', this.value)"><option value="valore" selected>💰 VALORE</option></select></th>
+        <th><select class="header-mapper" onchange="reassignColumn('materiale', this.value)"><option value="materiale" selected>🏺 MAT.</option></select></th>
+        <th><select class="header-mapper" onchange="reassignColumn('tecnica', this.value)"><option value="tecnica" selected>🎨 TECNICA</option></select></th>
+        <th><select class="header-mapper" onchange="reassignColumn('anno', this.value)"><option value="anno" selected>📅 ANNO</option></select></th>
+        <th><select class="header-mapper" onchange="reassignColumn('collocazione', this.value)"><option value="collocazione" selected>📍 SITO</option></select></th>
+        <th><select class="header-mapper" onchange="reassignColumn('camion', this.value)"><option value="camion" selected>🚚 VIAGGIO</option></select></th>
+        <th><select class="header-mapper" onchange="reassignColumn('cassa', this.value)"><option value="cassa" selected>📦 COD. CASSA</option></select></th>
+        <th><select class="header-mapper" onchange="reassignColumn('hs_code', this.value)"><option value="hs_code" selected>📜 HS CODE</option></select></th>
+        <th><select class="header-mapper" onchange="reassignColumn('piva', this.value)"><option value="piva" selected>📑 P.IVA</option></select></th>
+    </tr>
+</thead>
             <tbody id="masterTableBody"></tbody>
         </table>
     </div>
@@ -453,20 +540,18 @@ const DB_SCHEMA = `
         <option value="soggetto">👁️ Soggetto</option>
         <option value="firme">✍️ Firme</option>
     </optgroup>
-    <optgroup label="Dimensioni & Pesi (Opera)">
-        <option value="l_max">↔️ L Max</option>
-        <option value="p_max">↕️ P Max</option>
-        <option value="h_max">⬆️ H Max</option>
-        <option value="peso">⚖️ Peso Netto (kg)</option>
-        <option value="l_op">↔️ L Solo Opera</option>
-        <option value="p_op">↕️ P Solo Opera</option>
-        <option value="h_op">⬆️ H Solo Opera</option>
-    </optgroup>
-    <optgroup label="Cassa (Esterna & Tara)">
+    <optgroup label="Dimensioni & Pesi">
         <option value="l_max_cassa">↔️ L Esterna Cassa</option>
         <option value="p_max_cassa">↕️ P Esterna Cassa</option>
         <option value="h_max_cassa">⬆️ H Esterna Cassa</option>
         <option value="tara">⚖️ Tara Cassa (kg)</option>
+        <option value="peso">⚖️ Peso Netto (kg)</option>
+        <option value="l_op">↔️ L Solo Opera</option>
+        <option value="p_op">↕️ P Solo Opera</option>
+        <option value="h_op">⬆️ H Solo Opera</option>
+        <option value="l_max">↔️ L Max (Misto)</option>
+        <option value="p_max">↕️ P Max (Misto)</option>
+        <option value="h_max">⬆️ H Max (Misto)</option>
     </optgroup>
     <optgroup label="Logistica & Dogana">
         <option value="valore">💰 Valore</option>
@@ -476,6 +561,7 @@ const DB_SCHEMA = `
         <option value="hs">📜 HS Code</option>
         <option value="condizioni">📝 Condizioni</option>
         <option value="cassa">📦 Nome Cassa</option>
+        <option value="camion">🚚 Viaggio / Camion</option>
         <option value="partenza">🏢 Partenza</option>
         <option value="destinazione">🎯 Destinazione</option>
     </optgroup>
@@ -580,8 +666,14 @@ function updateStats() {
 }
 
 function svuotaDB() { 
-    if(confirm("Vuoi davvero svuotare l'intero database di CCE?")) { 
+    if(confirm("Vuoi davvero svuotare l'intero database di CCE? (Questo azzererà anche le visualizzazioni in CCV)")) { 
         masterDB = []; 
+        
+        // NUOVO: Cancella l'intera memoria di interscambio e le code
+        localStorage.removeItem('cuckoo_view_transfer_data');
+        localStorage.removeItem('cuckoo_box_import_queue');
+        localStorage.removeItem('cuckoo_nest_transfer_queue');
+
         saveDB(); 
         renderMainTable(); 
     } 
@@ -644,30 +736,89 @@ function sortByGroup(groupName) {
     renderMainTable();
 }
 
+// Salva i dati scritti in una cella
 function updateOperaField(id, field, element) {
-    let index = masterDB.findIndex(o => o.id === id);
-    if (index !== -1) {
+    const opera = masterDB.find(o => o.id == id);
+    if (opera) {
         let val = element.innerText.trim();
-        if(['l_max', 'p_max', 'h_max', 'peso', 'tara', 'l_max_cassa', 'p_max_cassa', 'h_max_cassa'].includes(field)) {
-            let num = parseFloat(val.replace(/[^\d.,-]/g, '').replace(',','.'));
-            masterDB[index][field] = isNaN(num) ? "" : num;
-            element.innerText = masterDB[index][field]; 
-        } else {
-            masterDB[index][field] = val;
+        if(['l_max', 'p_max', 'h_max', 'peso', 'tara', 'valore', 'l_max_cassa', 'p_max_cassa', 'h_max_cassa'].includes(field)) {
+            val = parseFloat(val.replace(',', '.')) || 0;
         }
-        saveDB(); 
+        
+        // Se il valore è diverso da quello precedente, salva la foto e aggiorna
+        if (opera[field] !== val) {
+            pushToHistory(); // 📸 SCATTA FOTO
+            opera[field] = val;
+            saveDB();
+            console.log(`Aggiornato ${field} per opera ${id}`);
+        }
     }
 }
 
 function renderMainTable() {
-    let tbody = document.getElementById('masterTableBody'); 
+    // SELETTORI CORRETTI
+    const thead = document.querySelector('.master-table thead');
+    const tbody = document.getElementById('masterTableBody');
+    
+    const allColumns = [
+        "id", "autore", "titolo", "anno", "tipologia", "tecnica", "soggetto", "firme",
+        "l_max_cassa", "p_max_cassa", "h_max_cassa", "tara", "peso", "l_op", "p_op", "h_op",
+        "valore", "valuta", "proprietario", "origine", "hs", "condizioni", "cassa", "camion"
+    ];
+    
+    let activeColumns = allColumns.filter(col => {
+        return masterDB.some(opera => opera[col] !== undefined && opera[col] !== null && opera[col] !== "");
+    });
+
+    const jollyCol = "colonna_extra";
+    activeColumns.push(jollyCol);
+
+    // Controlla se tutte le righe nel DB sono selezionate (serve per la casella in alto)
+    let allSelected = masterDB.length > 0 && masterDB.every(o => o._selected);
+
+    // --- 1. COSTRUZIONE TESTATA ---
+    let theadHTML = '<tr class="mapper-row">';
+    
+    // Casella Seleziona Tutto
+    theadHTML += `
+        <th style="padding: 0; text-align:center;" title="Seleziona/Deseleziona Tutto">
+            <input type="checkbox" class="master-checkbox-all" id="selectAllCb" ${allSelected ? 'checked' : ''} onchange="toggleSelectAll(this.checked)">
+        </th>`;
+    theadHTML += '<th style="padding: 0; text-align:center;">🛒</th>'; 
+    
+    activeColumns.forEach(col => {
+        let optionsHTML = DB_SCHEMA;
+        
+        // 🛡️ FILTRO ANTI-DOPPIONI
+        // Nasconde dal menu le colonne che sono già presenti in tabella
+        activeColumns.forEach(inUseCol => {
+            if (inUseCol !== jollyCol && inUseCol !== col) {
+                let regex = new RegExp(`(<option value="${inUseCol}")>`, 'g');
+                optionsHTML = optionsHTML.replace(regex, `$1 disabled hidden>`);
+            }
+        });
+
+        if (col === jollyCol) {
+            optionsHTML = `<option value="ignore" selected>➕ NUOVA COLONNA...</option>` + optionsHTML;
+        } else {
+            optionsHTML = optionsHTML.replace(`value="${col}"`, `value="${col}" selected`);
+        }
+        theadHTML += `<th><select class="header-mapper" onchange="reassignColumn('${col}', this.value)">${optionsHTML}</select></th>`;
+    });
+    
+    theadHTML += '</tr>';
+    thead.innerHTML = theadHTML;
+
+    // --- 2. COSTRUZIONE DATI ---
     tbody.innerHTML = '';
     
-    let search = document.getElementById('searchBar').value.toLowerCase();
+    let search = (document.getElementById('searchBar')?.value || "").toLowerCase();
     let filtered = masterDB.filter(o => `${o.id||''} ${o.autore||''} ${o.titolo||''} ${o.cassa||''}`.toLowerCase().includes(search));
     
     if(filtered.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="25" style="text-align:center; padding: 30px; color: #64748b;">Nessuna opera nel database.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="${activeColumns.length + 2}" style="text-align:center; padding: 50px; color:#64748b;">Nessun dato trovato o database vuoto. Inizia a scrivere nella colonna Jolly.</td></tr>`;
+        updateStats();
+        return;
     }
 
     filtered.forEach((opera) => {
@@ -675,42 +826,34 @@ function renderMainTable() {
         let tr = document.createElement('tr'); 
         if(opera._selected) tr.className = 'selected';
         
-        const tdE = (field, customClass = "", extraStyle = "") => {
+        const tdE = (field) => {
             let val = opera[field] !== undefined && opera[field] !== null ? opera[field] : "";
-            return `<td class="${customClass}" style="${extraStyle}" contenteditable="true" onblur="updateOperaField('${opera.id}', '${field}', this)">${val}</td>`;
+            let extraStyle = "";
+            if(["id", "l_max_cassa", "p_max_cassa", "h_max_cassa"].includes(field)) extraStyle = "color:#10b981; font-weight:bold;";
+            if(["peso", "tara"].includes(field)) extraStyle = "color:#3b82f6; font-weight:bold;";
+            if(["cassa", "camion"].includes(field)) extraStyle = "color:#ef4444; font-weight:bold;";
+
+            return `<td style="${extraStyle}" contenteditable="true" onblur="updateOperaField('${opera.id}', '${field}', this)">${val}</td>`;
         };
 
-        tr.innerHTML = `
-            <td><input type="checkbox" class="master-checkbox" ${opera._selected ? 'checked' : ''} onchange="toggleRowSelection(${realIndex}, this.checked)"></td>
-            ${tdE('id', '', 'font-weight:bold; color:#10b981;')}
-            ${tdE('autore')}
-            ${tdE('titolo', '', 'white-space:normal; min-width:150px;')}
-            ${tdE('anno')}
-            ${tdE('tipologia')}
-            ${tdE('tecnica')}
-            ${tdE('soggetto')}
-            ${tdE('firme')}
-            
-            ${tdE('l_max_cassa', '', 'color:#10b981; font-weight:bold;')}
-            ${tdE('p_max_cassa', '', 'color:#10b981; font-weight:bold;')}
-            ${tdE('h_max_cassa', '', 'color:#10b981; font-weight:bold;')}
-            ${tdE('tara', '', 'color:#f59e0b; font-weight:bold;')}
-            ${tdE('peso', '', 'color:#3b82f6; font-weight:bold;')}
-            ${tdE('l_op')}
-            ${tdE('p_op')}
-            ${tdE('h_op')}
-            
-            ${tdE('valore', '', 'color:#a78bfa;')}
-            ${tdE('valuta')}
-            ${tdE('proprietario')}
-            ${tdE('origine')}
-            ${tdE('hs')}
-            ${tdE('condizioni')}
-            ${tdE('cassa', '', 'color:#3b82f6; font-weight:bold;')}
-            ${tdE('camion', '', 'color:#ef4444; font-weight:bold;')}
+        // Struttura Spunta + Bottone Cestino ROSSO
+        let rowHTML = `
+            <td>
+                <input type="checkbox" class="master-checkbox" ${opera._selected ? 'checked' : ''} onchange="toggleRowSelection(${realIndex}, this.checked)">
+            </td>
+            <td>
+                <button class="btn-action btn-del" style="font-size: 11px; cursor: pointer; padding: 6px; border-radius: 4px; border: none; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center;" onclick="deleteOpera(${realIndex})" title="Elimina questa riga">🗑️</button>
+            </td>
         `;
+        
+        activeColumns.forEach(col => {
+            rowHTML += tdE(col);
+        });
+        
+        tr.innerHTML = rowHTML;
         tbody.appendChild(tr);
     });
+
     updateStats();
 }
 
@@ -720,10 +863,14 @@ function toggleRowSelection(idx, isChecked) {
     renderMainTable(); 
 }
 
-function toggleSelectAll(cb) { 
-    masterDB.forEach(o => o._selected = cb.checked); 
-    saveDB(); 
-    renderMainTable(); 
+function toggleSelectAll(isChecked) {
+    // Aggiorna lo stato di selezione per tutte le opere nel database
+    masterDB.forEach(opera => {
+        opera._selected = isChecked;
+    });
+    saveDB();
+    // Ridisegna la tabella per aggiornare visivamente le spunte e le righe evidenziate
+    renderMainTable();
 }
 
 // ----------------------------------------------------
@@ -1220,6 +1367,161 @@ function confirmImport() {
     renderMainTable(); 
     alert(`✅ Importate ${addedCount} opere nel Database Master.`); 
 }
+
+// 1. Sposta o elimina i dati da una colonna all'altra
+function reassignColumn(oldField, newField) {
+    if (oldField === newField) return;
+
+    // SCENARIO A: L'utente vuole eliminare la colonna
+    if (newField === 'ignore') {
+        if (confirm(`⚠️ ATTENZIONE: Vuoi svuotare e nascondere l'intera colonna "${oldField}"? I dati andranno persi.`)) {
+            pushToHistory(); // 📸 SCATTA FOTO (Aggiunto per Ctrl+Z)
+            
+            masterDB.forEach(opera => {
+                delete opera[oldField]; // Cancella il dato dal database
+            });
+            saveDB(); 
+            renderMainTable(); // La colonna, essendo vuota, scomparirà magicamente!
+            alert("🗑️ Colonna eliminata con successo.");
+        } else {
+            renderMainTable(); // Se annulla, resetta il menu a tendina
+        }
+        return; // Esce dalla funzione
+    }
+
+    // SCENARIO B: L'utente vuole spostare i dati in un'altra colonna
+    if (confirm(`Spostare i dati da "${oldField}" a "${newField}"? (I dati originali verranno rimossi dalla vecchia colonna)`)) {
+        pushToHistory(); // 📸 SCATTA FOTO (Aggiunto per Ctrl+Z)
+        
+        masterDB.forEach(opera => {
+            if (opera[oldField] !== undefined && opera[oldField] !== null) {
+                // Copia il dato nel nuovo campo
+                opera[newField] = opera[oldField];
+                // ELIMINA il dato dal vecchio campo
+                delete opera[oldField];
+            }
+        });
+
+        saveDB(); 
+        renderMainTable(); 
+        alert("✅ Dati riallocati e puliti.");
+    } else {
+        renderMainTable(); // Se annulla lo spostamento, resetta il menu
+    }
+}
+
+// Elimina una singola opera
+function deleteOpera(index) {
+    if(confirm("Sei sicuro di voler eliminare questa riga?")) {
+        pushToHistory(); // 📸 SCATTA FOTO
+        masterDB.splice(index, 1);
+        saveDB();
+        renderMainTable();
+    }
+}
+
+// 2. Salva il nome del titolo colonna se lo modifichi a mano
+function updateHeaderName(element) {
+    // Per ora lo salva solo nella sessione corrente. 
+    // Se vuoi che sia permanente anche dopo il refresh serve un localStorage dedicato.
+    console.log("Nuovo nome colonna:", element.innerText);
+}
+
+// ==========================================
+// NAVIGAZIONE TABELLA STILE EXCEL
+// ==========================================
+document.addEventListener('keydown', function(e) {
+    const td = e.target;
+    
+    // Si attiva solo se siamo dentro una cella editabile della tabella
+    if (td.tagName === 'TD' && td.getAttribute('contenteditable') === 'true') {
+        const tr = td.parentElement;
+        const tbody = tr.parentElement;
+        
+        const cellIndex = Array.from(tr.children).indexOf(td);
+        const rowIndex = Array.from(tbody.children).indexOf(tr);
+        
+        let nextCell = null;
+
+        if (e.key === 'Enter') {
+            e.preventDefault(); // Impedisce di andare a capo dentro la cella
+            // Shift+Enter va su, Enter normale va giù
+            const nextRow = tbody.children[rowIndex + (e.shiftKey ? -1 : 1)];
+            if (nextRow) nextCell = nextRow.children[cellIndex];
+        } 
+        else if (e.key === 'ArrowUp') {
+            e.preventDefault(); // Evita lo scroll della pagina
+            const nextRow = tbody.children[rowIndex - 1];
+            if (nextRow) nextCell = nextRow.children[cellIndex];
+        } 
+        else if (e.key === 'ArrowDown') {
+            e.preventDefault(); // Evita lo scroll della pagina
+            const nextRow = tbody.children[rowIndex + 1];
+            if (nextRow) nextCell = nextRow.children[cellIndex];
+        }
+
+        // Se abbiamo trovato una cella di destinazione, ci spostiamo
+        if (nextCell && nextCell.hasAttribute('contenteditable')) {
+            nextCell.focus();
+            
+            // Seleziona automaticamente tutto il testo della nuova cella (stile Excel)
+            // così se inizi a scrivere sovrascrivi, se premi freccia destra modifichi.
+            const range = document.createRange();
+            range.selectNodeContents(nextCell);
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+        }
+    }
+});
+
+// ==========================================
+// MACCHINA DEL TEMPO (CTRL+Z / UNDO)
+// ==========================================
+let historyStack = [];
+const MAX_HISTORY = 20; // Ricorda le ultime 20 azioni
+
+// Scatta una "foto" al DB e la salva prima di una modifica
+function pushToHistory() {
+    const snapshot = JSON.stringify(masterDB);
+    // Evita di salvare cloni identici di fila
+    if (historyStack.length === 0 || historyStack[historyStack.length - 1] !== snapshot) {
+        historyStack.push(snapshot);
+        if (historyStack.length > MAX_HISTORY) {
+            historyStack.shift(); // Elimina il ricordo più vecchio se superiamo i 20
+        }
+    }
+}
+
+// Torna indietro nel tempo
+function eseguiUndo() {
+    if (historyStack.length > 0) {
+        const previousState = historyStack.pop();
+        masterDB = JSON.parse(previousState);
+        saveDB();
+        renderMainTable();
+        
+        // Piccolo feedback visivo
+        const status = document.getElementById('status-text');
+        if(status) {
+            status.innerText = "↩️ Azione annullata (Undo)";
+            status.style.color = "#f59e0b";
+            setTimeout(() => { status.innerText = "Pronto."; status.style.color = "#64748b"; }, 2000);
+        }
+    }
+}
+
+// Ascolta la tastiera per Ctrl+Z o Cmd+Z
+document.addEventListener('keydown', function(e) {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+        // IMPORTANTE: Se stai scrivendo dentro una cella, lascia funzionare il Ctrl+Z normale del testo
+        if (document.activeElement && document.activeElement.tagName === 'TD' && document.activeElement.getAttribute('contenteditable') === 'true') {
+            return; 
+        }
+        e.preventDefault(); // Evita conflitti con il browser
+        eseguiUndo();
+    }
+});
 </script>
 </body>
 </html>
