@@ -505,7 +505,13 @@
         <button class="btn-success" style="border-width: 2px; padding: 12px; font-size: 13px;" onclick="syncWithCCE()">🔄 SINCRONIZZA CON CCE (Master DB)</button>
         <button class="btn-export print-hide" onclick="exportDataExcel()">📊 ESPORTA TABELLA</button>
         <button onclick="window.print()" class="print-hide" style="background: #64748b; color: white;">🖨️ STAMPA PDF</button>
-        
+     <div style="margin-top: 15px; display: flex; flex-direction: column; gap: 5px;">
+    <button class="btn-success" style="border-width: 2px; padding: 12px; font-size: 13px;" onclick="syncWithCCE()">🔄 SINCRONIZZA CON CCE (Master DB)</button>
+    <button class="btn-export print-hide" onclick="exportDataExcel()">📊 ESPORTA TABELLA</button>
+    <button onclick="window.print()" class="print-hide" style="background: #64748b; color: white;">🖨️ STAMPA PDF</button>
+    
+    <button class="btn-danger print-hide" onclick="resetCuckooNest()" style="margin-top: 10px; border: 2px solid #b91c1c;">🗑️ AZZERA CARICO (RESET)</button>
+</div>   
     </div>
     </div>
 </div>
