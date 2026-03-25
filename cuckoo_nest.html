@@ -495,6 +495,9 @@
     <div class="card print-hide" style="border-left: 4px solid #10b981;">
         <button class="btn-success" onclick="rifaiNestingAuto()">2. AUTO NESTING (MULTI-STACK)</button>
         <button class="btn-warning print-hide" onclick="undoMove()">↩️ ANNULLA SPOSTAMENTO</button>
+        <button onclick="resetCuckooNest()" style="background: #ef4444; color: white; border: none; padding: 10px; border-radius: 5px; cursor: pointer; margin-top: 10px;">
+    🗑️ AZZERA CARICO
+</button>
     </div>
 
     <div id="log" class="print-hide">> Ambiente pronto. Premi Ctrl+Z per annullare.</div>
@@ -711,6 +714,28 @@ function saveState() {
         moveHistory.shift(); 
     }
     moveHistory.push(currentStateStr);
+}
+
+function resetCuckooNest() {
+    // 1. Svuota gli array principali
+    if (confirm("Sei sicuro di voler azzerare il carico attuale? Tutti i dati non salvati andranno persi.")) {
+        allVehicles = []; // Svuota i veicoli
+        allItems = [];    // Svuota la lista delle casse/opere
+        
+        // 2. Se usi un sistema di tracciamento ID per il 3D, resetta i contatori
+        // nestedResults = {}; 
+        
+        // 3. Resetta l'interfaccia UI
+        const listContainer = document.getElementById('item-list'); 
+        if(listContainer) listContainer.innerHTML = '';
+        
+        // 4. Forza il refresh del canvas p5.js
+        // Se hai una funzione di render, chiamala qui
+        console.log("Cuckoo Nest: Carico azzerato.");
+        
+        // Se hai una funzione specifica per ridisegnare la scena:
+        // updateVisualization(); 
+    }
 }
 
 function undoMove() {
