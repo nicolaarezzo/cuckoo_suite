@@ -492,26 +492,19 @@
         </div>
     </div>
 
-    <div class="card print-hide" style="border-left: 4px solid #10b981;">
+<div class="card print-hide" style="border-left: 4px solid #10b981;">
         <button class="btn-success" onclick="rifaiNestingAuto()">2. AUTO NESTING (MULTI-STACK)</button>
         <button class="btn-warning print-hide" onclick="undoMove()">↩️ ANNULLA SPOSTAMENTO</button>
-        <button onclick="resetCuckooNest()" style="background: #ef4444; color: white; border: none; padding: 10px; border-radius: 5px; cursor: pointer; margin-top: 10px;">
-    🗑️ AZZERA CARICO</button>
+        <button class="btn-danger" onclick="resetCuckooNest()" style="margin-top: 10px; border: 2px solid #b91c1c;">🗑️ AZZERA TUTTO (RESET)</button>
     </div>
 
     <div id="log" class="print-hide">> Ambiente pronto. Premi Ctrl+Z per annullare.</div>
     
-    <div style="margin-top: 15px; display: flex; flex-direction: column; gap: 5px;">
+    <div style="margin-top: 15px; display: flex; flex-direction: column; gap: 5px;" class="print-hide">
         <button class="btn-success" style="border-width: 2px; padding: 12px; font-size: 13px;" onclick="syncWithCCE()">🔄 SINCRONIZZA CON CCE (Master DB)</button>
-        <button class="btn-export print-hide" onclick="exportDataExcel()">📊 ESPORTA TABELLA</button>
-        <button onclick="window.print()" class="print-hide" style="background: #64748b; color: white;">🖨️ STAMPA PDF</button>
-     <div style="margin-top: 15px; display: flex; flex-direction: column; gap: 5px;">
-    <button class="btn-success" style="border-width: 2px; padding: 12px; font-size: 13px;" onclick="syncWithCCE()">🔄 SINCRONIZZA CON CCE (Master DB)</button>
-    <button class="btn-export print-hide" onclick="exportDataExcel()">📊 ESPORTA TABELLA</button>
-    <button onclick="window.print()" class="print-hide" style="background: #64748b; color: white;">🖨️ STAMPA PDF</button>
-    
-    <button class="btn-danger print-hide" onclick="resetCuckooNest()" style="margin-top: 10px; border: 2px solid #b91c1c;">🗑️ AZZERA CARICO (RESET)</button>
-</div>   
+        <button class="btn-export" onclick="exportDataExcel()">📊 ESPORTA TABELLA</button>
+        <button onclick="window.print()" style="background: #64748b; color: white;">🖨️ STAMPA PDF</button>
+    </div>
     </div>
     </div>
 </div>
@@ -623,15 +616,52 @@ function initCapienza() {
     loadCapienzaPreset(false);
 }
 
-function loadCapienzaPreset(saveSelection = true) {
-    let val = document.getElementById('capienzaPreset').value;
-    document.getElementById('bL').value = capienzaPresets[val].L;
-    document.getElementById('bP').value = capienzaPresets[val].P;
-    document.getElementById('bH').value = capienzaPresets[val].H;
-    if(saveSelection) {
-        localStorage.setItem('cuckoo_nest_last_preset', val);
+function loadCapienzaPreset() {
+    const presetId = document.getElementById('capienzaPreset').value;
+    
+    // 1. Definiamo le misure in base all'ID scelto (usa i tuoi valori reali)
+    let nuoveMisure = { l: 420, p: 210, h: 220 }; // Default (Box 35q)
+
+    switch(presetId) {
+        case "1": nuoveMisure = { l: 300, p: 170, h: 180 }; break; // Furgone medio
+        case "2": nuoveMisure = { l: 350, p: 180, h: 190 }; break; // Furgone grande
+        case "3": nuoveMisure = { l: 420, p: 210, h: 220 }; break; // Box 35q
+        case "4": nuoveMisure = { l: 600, p: 240, h: 240 }; break; // Camion 7.5t
+        case "5": nuoveMisure = { l: 800, p: 245, h: 260 }; break; // Camion 18t
+        case "6": nuoveMisure = { l: 1360, p: 248, h: 270 }; break; // Semirimorchio
+        // Aggiungi gli altri case per le barche...
     }
-    renderAll();
+
+    // 2. Aggiorna i campi input numerici nella sidebar (se li hai)
+    // Assicurati che gli ID degli input siano questi o cambiali
+    if(document.getElementById('L_vano')) document.getElementById('L_vano').value = nuoveMisure.l;
+    if(document.getElementById('P_vano')) document.getElementById('P_vano').value = nuoveMisure.p;
+    if(document.getElementById('H_vano')) document.getElementById('H_vano').value = nuoveMisure.h;
+
+    // 3. AGGIORNAMENTO 3D IMMEDIATO
+    // Se non c'è ancora un viaggio, ne creiamo uno "fantasma" per vedere il box
+    if (viaggi.length === 0) {
+        viaggi.push({
+            id: "Anteprima",
+            items: [],
+            L: nuoveMisure.l,
+            P: nuoveMisure.p,
+            H: nuoveMisure.h
+        });
+    } else {
+        // Se ci sono viaggi, aggiorna le misure del primo (quello visualizzato)
+        viaggi[0].L = nuoveMisure.l;
+        viaggi[0].P = nuoveMisure.p;
+        viaggi[0].H = nuoveMisure.h;
+    }
+
+    // 4. LOG e RE-RENDER
+    writeLog(`Vano predefinito aggiornato: ${nuoveMisure.l}x${nuoveMisure.p}x${nuoveMisure.h}`, "#10b981");
+    
+    // Chiama la funzione di p5.js per ridisegnare la scena
+    if (typeof renderAll === "function") {
+        renderAll();
+    }
 }
 
 function saveCapienzaPreset() {
@@ -722,24 +752,19 @@ function saveState() {
 }
 
 function resetCuckooNest() {
-    // 1. Svuota gli array principali
-    if (confirm("Sei sicuro di voler azzerare il carico attuale? Tutti i dati non salvati andranno persi.")) {
-        allVehicles = []; // Svuota i veicoli
-        allItems = [];    // Svuota la lista delle casse/opere
+    if (confirm("ATTENZIONE: Sei sicuro di voler azzerare tutto? Cancellerai le casse in banchina e tutti i viaggi creati.")) {
+        saveState(); // Permette di tornare indietro con CTRL+Z
         
-        // 2. Se usi un sistema di tracciamento ID per il 3D, resetta i contatori
-        // nestedResults = {}; 
+        itemsMaster = [];     // Svuota le casse
+        viaggi = [];          // Svuota i camion
+        moveHistory = [];     // Pulisce la cronologia
+        cassaIdCounter = 1;   // Resetta il conteggio ID
+        tripCameras = {};     // Resetta le telecamere
+        tripXray = {};        // Resetta la vista X-Ray
         
-        // 3. Resetta l'interfaccia UI
-        const listContainer = document.getElementById('item-list'); 
-        if(listContainer) listContainer.innerHTML = '';
+        writeLog("SISTEMA RESETTATO: Banchina e Camion svuotati.", "#ef4444");
         
-        // 4. Forza il refresh del canvas p5.js
-        // Se hai una funzione di render, chiamala qui
-        console.log("Cuckoo Nest: Carico azzerato.");
-        
-        // Se hai una funzione specifica per ridisegnare la scena:
-        // updateVisualization(); 
+        renderAll(); // Questa funzione aggiorna la grafica (p5.js)
     }
 }
 
