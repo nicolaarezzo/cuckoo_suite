@@ -85,6 +85,12 @@
         
         .app-btn:hover { background: #1e293b; color: white; }
 
+.btn-ctrl { 
+    padding: 8px; border-radius: 6px; border: none; color: white; 
+    font-weight: bold; font-size: 10px; cursor: pointer; transition: 0.2s; 
+}
+.btn-ctrl:hover { filter: brightness(1.2); }
+
         /* Colori personalizzati per ogni modulo */
         .btn-cce:hover, .btn-cce.active { background: #f59e0b; color: white; border-color: #fbbf24; box-shadow: 0 4px 10px rgba(245, 158, 11, 0.3); } /* Giallo */
         .btn-ccb:hover, .btn-ccb.active { background: #3b82f6; color: white; border-color: #60a5fa; box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3); } /* Blu */
@@ -127,6 +133,17 @@
             </div>
         </div>
 
+<!-- Trova il div #suite-sidebar e aggiungi questa sezione prima dei bottoni app-btn -->
+<div style="margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #1e293b;">
+    <label style="font-size: 9px; color: #64748b; letter-spacing: 1px;">GESTIONE PROGETTO</label>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-top: 5px;">
+        <button class="btn-ctrl" onclick="nuovoProgetto()" style="background: #ef4444;" title="Nuovo Progetto (Pulisce tutto)">🆕 NUOVO</button>
+        <button class="btn-ctrl" onclick="document.getElementById('fileInpMaster').click()" style="background: #334155;">📂 APRI</button>
+    </div>
+    <button class="btn-ctrl" onclick="salvaMaster()" style="background: #3b82f6; width: 100%; margin-top: 5px;">💾 SALVA MASTER PROJECT</button>
+    <input type="file" id="fileInpMaster" accept=".ccsf" style="display: none;" onchange="caricaMaster(event)">
+</div>
+
         <button class="app-btn btn-ccv active" onclick="loadApp('ccv', this)">
             📱 Cuckoo View
         </button>
@@ -161,31 +178,150 @@
     </div>
 
     <script>
+        // --- AUTO-PULIZIA ALL'AVVIO DELLA SUITE ---
+(function() {
+    // Controlliamo se questa è una NUOVA sessione (appena aperta) 
+    // o se l'utente ha solo ricaricato la pagina (Refresh)
+    if (!sessionStorage.getItem('cuckoo_suite_session_active')) {
+        
+        // Elenco dei dati temporanei del progetto da eliminare
+        const projectKeys = [
+            'cuckoo_egg_db',                // Database opere (CCE)
+            'cuckoo_box_import_queue',      // Code produzione (CCB)
+            'cuckoo_nest_transfer_queue',   // Banchina carico (CCN)
+            'cuckoo_view_transfer_data'     // Hub della vista (CCV)
+        ];
+
+        // Cancelliamo solo questi dati
+        projectKeys.forEach(key => localStorage.removeItem(key));
+
+        // NOTA: Non tocchiamo 'cuckoo_nest_capienza_presets' 
+        // né 'cuckoo_nest_last_preset', così i tuoi camion restano salvati.
+
+        // Segniamo che la sessione è ora attiva. 
+        // Finché la scheda del browser resta aperta, i dati non verranno più cancellati al refresh.
+        sessionStorage.setItem('cuckoo_suite_session_active', 'true');
+        
+        console.log("🚀 Nuova sessione: Project data azzerato. Mezzi CCN preservati.");
+    } else {
+        console.log("🔄 Sessione ripristinata: Dati mantenuti.");
+    }
+})();
+        // --- GESTIONE INTERFACCIA ---
         function toggleSuiteSidebar() {
             document.getElementById('suite-sidebar').classList.toggle('collapsed');
         }
 
         function loadApp(appId, btnElement) {
-            // Spegne tutte le schede
+            // Nasconde tutti i frame
             document.querySelectorAll('.app-frame').forEach(f => f.classList.remove('active'));
-            // Accende solo quella richiesta senza ricaricare la pagina
+            // Mostra quello selezionato
             document.getElementById('frame-' + appId).classList.add('active');
             
-            // Aggiorna grafica bottoni
+            // Aggiorna lo stato dei bottoni
             let btns = document.querySelectorAll('.app-btn');
             btns.forEach(btn => btn.classList.remove('active'));
             btnElement.classList.add('active');
 
-            // Auto-collapse su schermi piccoli
+            // Chiude la sidebar su mobile dopo il click
             if (window.innerWidth < 1000) {
                 document.getElementById('suite-sidebar').classList.add('collapsed');
             }
         }
 
+        // --- GESTIONE PROGETTO (NUOVE FUNZIONI) ---
+        function nuovoProgetto() {
+            if(confirm("⚠️ AZIONE IRREVERSIBILE\nVuoi cancellare tutti i dati (Opere, Casse, Viaggi) per iniziare un nuovo progetto?")) {
+                const keysToClear = [
+                    'cuckoo_egg_db', 
+                    'cuckoo_box_import_queue', 
+                    'cuckoo_nest_transfer_queue', 
+                    'cuckoo_view_transfer_data'
+                ];
+                keysToClear.forEach(key => localStorage.removeItem(key));
+                alert("✨ Memoria dati pulita. I mezzi personalizzati sono stati mantenuti.");
+                window.location.reload(); 
+            }
+        }
+
+        function salvaMaster() {
+            // 1. Raccoglie i dati attuali da tutti i moduli (Egg, Box, Nest, View)
+            const projectData = {
+                cce: JSON.parse(localStorage.getItem('cuckoo_egg_db') || '[]'),
+                ccb_queue: JSON.parse(localStorage.getItem('cuckoo_box_import_queue') || '[]'),
+                ccn_queue: JSON.parse(localStorage.getItem('cuckoo_nest_transfer_queue') || '[]'),
+                view_data: JSON.parse(localStorage.getItem('cuckoo_view_transfer_data') || '{}'),
+                timestamp: new Date().toISOString()
+            };
+
+            // 2. Converte l'oggetto in testo JSON e lo cripta in Base64 per pulizia
+            const jsonStr = JSON.stringify(projectData);
+            const b64Data = btoa(unescape(encodeURIComponent(jsonStr)));
+            
+            // 3. Chiede all'utente come chiamare il file
+            let nomeFile = prompt("Salva Progetto CCSF\nInserisci il nome del file:", "Progetto_Logistica");
+            if (nomeFile === null || nomeFile.trim() === "") return; // Esce se l'utente annulla
+
+            // 4. Crea il file fisico (Blob) con i dati Base64
+            const blob = new Blob([b64Data], {type: "text/plain"});
+            const url = URL.createObjectURL(blob);
+            
+            // 5. Simula il download del file con estensione .ccsf
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            // Pulisce il nome file eliminando spazi brutti
+            a.download = nomeFile.replace(/\s+/g, '_') + ".ccsf"; 
+            
+            document.body.appendChild(a);
+            a.click();
+            
+            // 6. Pulizia finale della memoria
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        }
+
+        function caricaMaster(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    // 1. Legge il contenuto del file .ccsf (testo Base64)
+                    const b64 = e.target.result;
+                    
+                    // 2. Decodifica i dati in un oggetto JSON
+                    const data = JSON.parse(decodeURIComponent(escape(atob(b64))));
+
+                    // 3. Verifica minima: se non ci sono opere né dati vista, il file è sbagliato
+                    if(!data.cce && !data.view_data) throw new Error();
+
+                    // 4. Scrive i dati nel localStorage (sovrascrive il lavoro precedente)
+                    if(data.cce) localStorage.setItem('cuckoo_egg_db', JSON.stringify(data.cce));
+                    if(data.ccb_queue) localStorage.setItem('cuckoo_box_import_queue', JSON.stringify(data.ccb_queue));
+                    if(data.ccn_queue) localStorage.setItem('cuckoo_nest_transfer_queue', JSON.stringify(data.ccn_queue));
+                    if(data.view_data) localStorage.setItem('cuckoo_view_transfer_data', JSON.stringify(data.view_data));
+
+                    // 5. Feedback e ricarica della Suite per pulire i buffer
+                    alert("✅ Progetto .CCSF caricato con successo!");
+                    window.location.reload();
+
+                } catch(err) {
+                    alert("❌ Errore: Il file selezionato non è un formato .ccsf valido o è danneggiato.");
+                    console.error("Errore import:", err);
+                }
+            };
+            reader.readAsText(file);
+            
+            // Resetta l'input per permettere di ricaricare lo stesso file se necessario
+            event.target.value = "";
+        }
+
+        // --- SERVICE WORKER (OPZIONALE) ---
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js')
-                    .catch(err => console.log('Errore SW', err));
+                navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW error', err));
             });
         }
     </script>

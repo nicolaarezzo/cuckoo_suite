@@ -492,19 +492,18 @@
         </div>
     </div>
 
-<div class="card print-hide" style="border-left: 4px solid #10b981;">
+    <div class="card print-hide" style="border-left: 4px solid #10b981;">
         <button class="btn-success" onclick="rifaiNestingAuto()">AUTO NESTING</button>
+        <button class="btn-warning" style="background: #f59e0b; margin-top: 8px;" onclick="scaricaTutto()">📥 SCARICA TUTTO IN BANCHINA</button>
         <button class="btn-warning print-hide" onclick="undoMove()">↩️ ANNULLA SPOSTAMENTO</button>
-        <button class="btn-danger" onclick="resetCuckooNest()" style="margin-top: 10px; border: 2px solid #b91c1c;">🗑️ AZZERA TUTTO (RESET)</button>
     </div>
 
     <div id="log" class="print-hide">> Ambiente pronto. Premi Ctrl+Z per annullare.</div>
     
-    <div style="margin-top: 15px; display: flex; flex-direction: column; gap: 5px;" class="print-hide">
-        <button class="btn-success" style="border-width: 2px; padding: 12px; font-size: 13px;" onclick="syncWithCCE()">🔄 SINCRONIZZA CON CCE (Master DB)</button>
-        <button class="btn-export" onclick="exportDataExcel()">📊 ESPORTA TABELLA</button>
-        <button onclick="window.print()" style="background: #64748b; color: white;">🖨️ STAMPA PDF</button>
-    </div>
+    <div style="margin-top: 15px; display: flex; flex-direction: column; gap: 5px;">
+        <button class="btn-export print-hide" onclick="exportDataExcel()">📊 ESPORTA TABELLA</button>
+        <button onclick="window.print()" class="print-hide" style="background: #64748b; color: white;">🖨️ STAMPA PDF</button>
+        
     </div>
     </div>
 </div>
@@ -616,52 +615,15 @@ function initCapienza() {
     loadCapienzaPreset(false);
 }
 
-function loadCapienzaPreset() {
-    const presetId = document.getElementById('capienzaPreset').value;
-    
-    // 1. Definiamo le misure in base all'ID scelto (usa i tuoi valori reali)
-    let nuoveMisure = { l: 420, p: 210, h: 220 }; // Default (Box 35q)
-
-    switch(presetId) {
-        case "1": nuoveMisure = { l: 300, p: 170, h: 180 }; break; // Furgone medio
-        case "2": nuoveMisure = { l: 350, p: 180, h: 190 }; break; // Furgone grande
-        case "3": nuoveMisure = { l: 420, p: 210, h: 220 }; break; // Box 35q
-        case "4": nuoveMisure = { l: 600, p: 240, h: 240 }; break; // Camion 7.5t
-        case "5": nuoveMisure = { l: 800, p: 245, h: 260 }; break; // Camion 18t
-        case "6": nuoveMisure = { l: 1360, p: 248, h: 270 }; break; // Semirimorchio
-        // Aggiungi gli altri case per le barche...
+function loadCapienzaPreset(saveSelection = true) {
+    let val = document.getElementById('capienzaPreset').value;
+    document.getElementById('bL').value = capienzaPresets[val].L;
+    document.getElementById('bP').value = capienzaPresets[val].P;
+    document.getElementById('bH').value = capienzaPresets[val].H;
+    if(saveSelection) {
+        localStorage.setItem('cuckoo_nest_last_preset', val);
     }
-
-    // 2. Aggiorna i campi input numerici nella sidebar (se li hai)
-    // Assicurati che gli ID degli input siano questi o cambiali
-    if(document.getElementById('L_vano')) document.getElementById('L_vano').value = nuoveMisure.l;
-    if(document.getElementById('P_vano')) document.getElementById('P_vano').value = nuoveMisure.p;
-    if(document.getElementById('H_vano')) document.getElementById('H_vano').value = nuoveMisure.h;
-
-    // 3. AGGIORNAMENTO 3D IMMEDIATO
-    // Se non c'è ancora un viaggio, ne creiamo uno "fantasma" per vedere il box
-    if (viaggi.length === 0) {
-        viaggi.push({
-            id: "Anteprima",
-            items: [],
-            L: nuoveMisure.l,
-            P: nuoveMisure.p,
-            H: nuoveMisure.h
-        });
-    } else {
-        // Se ci sono viaggi, aggiorna le misure del primo (quello visualizzato)
-        viaggi[0].L = nuoveMisure.l;
-        viaggi[0].P = nuoveMisure.p;
-        viaggi[0].H = nuoveMisure.h;
-    }
-
-    // 4. LOG e RE-RENDER
-    writeLog(`Vano predefinito aggiornato: ${nuoveMisure.l}x${nuoveMisure.p}x${nuoveMisure.h}`, "#10b981");
-    
-    // Chiama la funzione di p5.js per ridisegnare la scena
-    if (typeof renderAll === "function") {
-        renderAll();
-    }
+    renderAll();
 }
 
 function saveCapienzaPreset() {
@@ -704,38 +666,6 @@ function setTripVehicle(tripId, presetKey) {
     }
 }
 
-// ==========================================
-// SINCRONIZZAZIONE RITORNO A CCE
-// ==========================================
-function syncWithCCE() {
-    if (itemsMaster.length === 0) return alert("Nessuna cassa da sincronizzare.");
-    
-    let dbRaw = localStorage.getItem('cuckoo_egg_db');
-    if(!dbRaw) return alert("Database CCE vuoto.");
-    
-    let db = JSON.parse(dbRaw); 
-    let updatedCount = 0;
-
-    itemsMaster.forEach(cassa => {
-        let operaId = null;
-        if(cassa.masterData && cassa.masterData.id) {
-            operaId = cassa.masterData.id;
-        }
-
-        if(operaId) {
-            let index = db.findIndex(o => o.id === operaId);
-            if(index !== -1) {
-                // Registra il viaggio della cassa nel DB CCE
-                let statoViaggio = cassa.trip !== -1 ? `Viaggio #${cassa.trip + 1}` : 'In Banchina';
-                db[index].camion = statoViaggio; // Salva la properties (per CCV)
-                updatedCount++;
-            }
-        }
-    });
-
-    localStorage.setItem('cuckoo_egg_db', JSON.stringify(db));
-    alert(`✅ Sincronizzazione completata!\n${updatedCount} opere aggiornate in CCE con lo stato di carico del Camion.`);
-}
 
 // ==========================================
 // GESTIONE UNDO E AGGIUNTA MANUALE
@@ -751,20 +681,37 @@ function saveState() {
     moveHistory.push(currentStateStr);
 }
 
-function resetCuckooNest() {
-    if (confirm("ATTENZIONE: Sei sicuro di voler azzerare tutto? Cancellerai le casse in banchina e tutti i viaggi creati.")) {
-        saveState(); // Permette di tornare indietro con CTRL+Z
+function scaricaTutto() {
+    // Verifichiamo se ci sono effettivamente casse caricate
+    let casseCaricate = itemsMaster.filter(i => i.trip !== -1 && !i.isEntity);
+    
+    if (casseCaricate.length === 0) {
+        alert("I camion sono già vuoti!");
+        return;
+    }
+
+    if (confirm(`Vuoi scaricare tutte le ${casseCaricate.length} casse e riportarle in banchina?`)) {
+        // Scattiamo una foto per il Ctrl+Z
+        saveState(); 
+
+        itemsMaster.forEach(i => {
+            if (!i.isEntity) {
+                i.trip = -1;     // Riporta in banchina
+                i.manual = false; // Rimuove forzature manuali
+                i.isChild = false; // Smonta eventuali impilamenti
+                i.x = 9999;      // Coordinate di banchina
+                i.y = 9999;
+                i.z = 0;
+            }
+        });
+
+        // Svuotiamo l'array dei viaggi attivi
+        viaggi = [];
+
+        writeLog("Logistica: Camion svuotati. Tutte le casse sono in banchina.", "#f59e0b");
         
-        itemsMaster = [];     // Svuota le casse
-        viaggi = [];          // Svuota i camion
-        moveHistory = [];     // Pulisce la cronologia
-        cassaIdCounter = 1;   // Resetta il conteggio ID
-        tripCameras = {};     // Resetta le telecamere
-        tripXray = {};        // Resetta la vista X-Ray
-        
-        writeLog("SISTEMA RESETTATO: Banchina e Camion svuotati.", "#ef4444");
-        
-        renderAll(); // Questa funzione aggiorna la grafica (p5.js)
+        // Ridisegniamo tutto (questo aggiornerà anche CCE e CCV in automatico)
+        renderAll();
     }
 }
 
@@ -881,6 +828,7 @@ function aggiungiCassaManuale() {
     };
     
     itemsMaster.push(newItem);
+    autoSyncManualCrateToCCE(newItem);
     writeLog(`Cassa ${idStr} aggiunta in Banchina.`);
     document.getElementById('manPeso').value = ""; 
     
@@ -892,6 +840,32 @@ function rimuoviDaBanchina(idToRemove) {
     itemsMaster = itemsMaster.filter(i => i.id !== idToRemove);
     writeLog(`Cassa ${idToRemove} rimossa.`, "#ef4444");
     renderAll();
+}
+
+// --- NUOVA FUNZIONE PER AGGIUNGERE VIAGGIO MANUALE ---
+function aggiungiViaggioVuoto() {
+    saveState();
+    
+    // Calcola il prossimo ID disponibile
+    let nextId = viaggi.length;
+    let globalPreset = document.getElementById('capienzaPreset').value;
+    let presetData = capienzaPresets[globalPreset];
+
+    // Crea la struttura del nuovo viaggio
+    let nuovoViaggio = { 
+        id: nextId, 
+        items: [],
+        vehiclePreset: globalPreset,
+        L: presetData.L, 
+        P: presetData.P, 
+        H: presetData.H
+    };
+    
+    viaggi.push(nuovoViaggio);
+    
+    // Forza il rendering per mostrare il nuovo vano di carico
+    renderAll();
+    writeLog(`Viaggio #${nextId + 1} creato manualmente. Ora puoi cambiare mezzo o trascinare casse.`, "#3b82f6");
 }
 
 function openGuide() { 
@@ -956,11 +930,8 @@ function exportDataExcel() {
 }
 
 function sendToCuckooView(silent = false) {
-    if (itemsMaster.length === 0) { 
-        if(!silent) alert('Nessuna cassa presente nel piano di carico.'); 
-        return; 
-    }
-    
+    // RIMOSSO il blocco "if (itemsMaster.length === 0) return;"
+
     let mL = parseFloat(document.getElementById('mL').value) || 4;
     let mP = parseFloat(document.getElementById('mP').value) || 4;
     let mH = parseFloat(document.getElementById('mH').value) || 5;
@@ -970,17 +941,13 @@ function sendToCuckooView(silent = false) {
         version: "14.31",
         timestamp: new Date().toISOString(),
         margins: { L: mL, P: mP, H: mH },
-        tripsData: viaggi.map(v => {
-            let vPreset = v.vehiclePreset || "3"; 
-            let presetData = capienzaPresets[vPreset] || {nome: "Veicolo"};
-            return {
-                id: v.id,
-                name: `Viaggio #${v.id + 1} (${presetData.nome})`,
-                vehicle: { L: v.L, P: v.P, H: v.H },
-                items: v.items // CRUCIALE: Senza questo, CCV non riceve le casse!
-            };
-        }),
-        crates: itemsMaster 
+        tripsData: viaggi.map(v => ({
+            id: v.id,
+            name: `Viaggio #${v.id + 1}`,
+            vehicle: { L: v.L, P: v.P, H: v.H },
+            items: v.items 
+        })),
+        crates: itemsMaster // Sarà [] se svuotato
     };
 
     let ccvDataRaw = localStorage.getItem('cuckoo_view_transfer_data'); 
@@ -990,7 +957,7 @@ function sendToCuckooView(silent = false) {
     
     localStorage.setItem('cuckoo_view_transfer_data', JSON.stringify(ccvData));
     
-    if(!silent) alert(`✅ Piani di carico inviati con successo a Cuckoo View!\nApri l'app dal menu laterale (Viola).`);
+    if(!silent && itemsMaster.length > 0) alert(`✅ Piano di carico aggiornato in View!`);
 }
 
 // ==========================================
@@ -1332,8 +1299,9 @@ function renderAll() {
 
             card.innerHTML = `
                 <div class="trip-header">
-                    <div style="display:flex; align-items:center; gap:15px;">
+                    <div style="display:flex; align-items:center; gap:10px;">
                         <span>VIAGGIO #${idx+1}</span>
+                        <button class="print-hide" onclick="aggiungiViaggioVuoto()" style="width: 22px; height: 22px; padding: 0; background: #10b981; color: white; border-radius: 4px; border:none; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; font-size: 16px;" title="Aggiungi un altro viaggio">+</button>
                         ${tripControlsHTML}
                     </div>
                     <span>Casse caricate: ${validItemsCount} | Peso Totale: ${weightStr}</span>
@@ -1375,6 +1343,7 @@ function renderAll() {
         
         // AUTO-SYNC SILENZIOSO CON CCV
         sendToCuckooView(true);
+        autoSyncTripsToCCE();
 
     } catch(e) { 
         console.error(e);
@@ -1966,6 +1935,68 @@ if ('serviceWorker' in navigator) {
             .catch(err => console.log('Errore Service Worker:', err)); 
     });
 }
+
+function autoSyncTripsToCCE() {
+    let dbRaw = localStorage.getItem('cuckoo_egg_db');
+    if (!dbRaw) return;
+
+    let db = JSON.parse(dbRaw);
+    let isChanged = false;
+
+    // Scorriamo tutte le casse presenti in Nest
+    itemsMaster.forEach(cassa => {
+        // Troviamo l'ID dell'opera originale
+        let operaId = (cassa.masterData && cassa.masterData.id) ? cassa.masterData.id : cassa.id;
+        
+        let index = db.findIndex(o => o.id === operaId);
+
+        if (index !== -1) {
+            // Definiamo il nuovo stato del viaggio
+            let nuovoStato = (cassa.trip !== -1) ? `Viaggio #${cassa.trip + 1}` : "In Banchina";
+            
+            // Se lo stato in CCE è diverso da quello attuale in Nest, aggiorniamo
+            if (db[index].camion !== nuovoStato) {
+                db[index].camion = nuovoStato;
+                isChanged = true;
+            }
+        }
+    });
+
+    // Se abbiamo fatto almeno una modifica, salviamo nel database master
+    if (isChanged) {
+        localStorage.setItem('cuckoo_egg_db', JSON.stringify(db));
+    }
+}
+
+function autoSyncManualCrateToCCE(item) {
+    let dbRaw = localStorage.getItem('cuckoo_egg_db');
+    let db = dbRaw ? JSON.parse(dbRaw) : [];
+
+    // Controlliamo se per caso esiste già (evita duplicati)
+    let index = db.findIndex(o => o.id === item.id);
+
+    if (index === -1) {
+        // CREAZIONE: Se non esiste, aggiungiamo il collo al Master DB
+        let nuovaEntrata = {
+            id: item.id,
+            autore: "LOGISTICA",
+            titolo: "Collo Extra",
+            // In CCN lavoriamo con misure esterne, le scriviamo nelle colonne cassa
+            l_max_cassa: item.L,
+            p_max_cassa: item.P,
+            h_max_cassa: item.H,
+            peso: item.peso || 0,
+            cassa: item.id,
+            camion: "In Banchina",
+            _selected: false
+        };
+        db.push(nuovaEntrata);
+        
+        // Salvataggio nel Master DB
+        localStorage.setItem('cuckoo_egg_db', JSON.stringify(db));
+    }
+}
+
 </script>
 </body>
 </html>

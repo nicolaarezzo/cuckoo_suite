@@ -358,7 +358,6 @@
         <div id="log">> Modulo Produzione attivo.</div>
 
         <div style="margin-top: 5px; display: flex; flex-direction: column; gap: 5px;">
-            <button class="btn-success" style="border-width: 2px; padding: 12px; font-size: 13px;" onclick="syncWithCCE()">🔄 SINCRONIZZA CON CCE (Master DB)</button>
             <button class="btn-danger" style="background:#ef4444;" onclick="exportToCuckooNest()">🚀 INVIA AL CAMION (CCN)</button>
             <button class="btn-dxf" onclick="generaDXF('imbottitura')">📥 DXF Imbottitura</button>
             <button class="btn-dxf" onclick="generaDXF('legno')">📥 DXF Legno</button>
@@ -433,44 +432,7 @@ function checkCCBImportQueue() {
     }
 }
 
-// ==========================================
-// SINCRONIZZAZIONE RITORNO A CCE (Ponte C)
-// ==========================================
-function syncWithCCE() {
-    if (itemsMaster.length === 0) return alert("Nessuna cassa da sincronizzare.");
-    
-    let dbRaw = localStorage.getItem('cuckoo_egg_db');
-    if(!dbRaw) return alert("Database CCE vuoto. Assicurati di aver salvato opere in CCE prima di sincronizzare.");
-    
-    let db = JSON.parse(dbRaw); 
-    let updatedCount = 0;
 
-    itemsMaster.forEach(cassa => {
-        let operaId = null;
-        
-        // Cerca l'ID dell'opera originale nei dati nascosti passati da CCE
-        if(cassa.masterData && cassa.masterData.id) {
-            operaId = cassa.masterData.id;
-        }
-
-        if(operaId) {
-            let index = db.findIndex(o => o.id === operaId);
-            if(index !== -1) {
-                // Aggiorna i campi logistici sul Master Database
-                db[index].cassa = cassa.id;
-                db[index].tara = parseFloat(cassa.results.dimensioniFinali.pesoLegno.toFixed(2));
-                db[index].l_max_cassa = parseFloat((cassa.results.dimensioniFinali.lExt/10).toFixed(1));
-                db[index].p_max_cassa = parseFloat((cassa.results.dimensioniFinali.pExt/10).toFixed(1));
-                db[index].h_max_cassa = parseFloat((cassa.results.dimensioniFinali.hExt/10).toFixed(1));
-                updatedCount++;
-            }
-        }
-    });
-
-    // Salva il database aggiornato
-    localStorage.setItem('cuckoo_egg_db', JSON.stringify(db));
-    alert(`✅ Sincronizzazione completata!\n${updatedCount} opere aggiornate in CCE con i dati strutturali della cassa (tara, misure esterne).`);
-}
 
 // ==========================================
 // SPEDIZIONE AL CAMION CCN (Ponte D)
@@ -586,7 +548,6 @@ function calcolaBox(item) {
         pExt += 2 * rSpess; 
         hExt += 2 * rSpess; 
         
-        // RIPRISTINATO: L'intero set dei 24 rinforzi per le tabelle HTML e DXF
         rinf = { 
             baseLunga1: { l: lTot + 2*rSpess, h: rW, nome: 'Base Lunga 1' }, 
             baseLunga2: { l: lTot + 2*rSpess, h: rW, nome: 'Base Lunga 2' }, 
@@ -634,6 +595,58 @@ function calcolaBox(item) {
         pan, 
         rinf 
     };
+
+    // --- AGGIUNTO: SINCRONIZZAZIONE AUTOMATICA ---
+    autoSyncItemToCCE(item);
+}
+
+function autoSyncItemToCCE(item) {
+    let dbRaw = localStorage.getItem('cuckoo_egg_db');
+    let db = dbRaw ? JSON.parse(dbRaw) : [];
+
+    // Cerchiamo di capire se questa cassa è figlia di un'opera di CCE
+    let operaId = (item.masterData && item.masterData.id) ? item.masterData.id : null;
+    let index = -1;
+
+    if (operaId) {
+        // Caso A: L'opera esiste già (arriva da CCE)
+        index = db.findIndex(o => o.id === operaId);
+    } else {
+        // Caso B: È una cassa manuale, controlliamo se l'abbiamo già aggiunta al DB
+        index = db.findIndex(o => o.id === item.id);
+    }
+
+    const dimF = item.results.dimensioniFinali;
+
+    if (index !== -1) {
+        // AGGIORNAMENTO riga esistente
+        db[index].cassa = item.id;
+        db[index].tara = parseFloat(dimF.pesoLegno.toFixed(2));
+        db[index].l_max_cassa = parseFloat((dimF.lExt/10).toFixed(1));
+        db[index].p_max_cassa = parseFloat((dimF.pExt/10).toFixed(1));
+        db[index].h_max_cassa = parseFloat((dimF.hExt/10).toFixed(1));
+    } else {
+        // CREAZIONE nuova riga (Cassa Manuale)
+        let nuovaEntrata = {
+            id: item.id,
+            autore: "PRODUZIONE",
+            titolo: "Cassa Manuale",
+            l_max: parseFloat((item.L / 10).toFixed(1)),
+            p_max: parseFloat((item.P / 10).toFixed(1)),
+            h_max: parseFloat((item.H / 10).toFixed(1)),
+            peso: item.pesoNetto || 0,
+            cassa: item.id,
+            tara: parseFloat(dimF.pesoLegno.toFixed(2)),
+            l_max_cassa: parseFloat((dimF.lExt/10).toFixed(1)),
+            p_max_cassa: parseFloat((dimF.pExt/10).toFixed(1)),
+            h_max_cassa: parseFloat((dimF.hExt/10).toFixed(1)),
+            _selected: false
+        };
+        db.push(nuovaEntrata);
+    }
+
+    // Salvataggio Master
+    localStorage.setItem('cuckoo_egg_db', JSON.stringify(db));
 }
 
 function ricalcolaTutto() { 
@@ -909,16 +922,14 @@ const sketch3DBox = (item, index) => (p) => {
 };
 
 function sendToCuckooView(silent = false) {
-    if (itemsMaster.length === 0) return; // Esce in silenzio se non c'è nulla
-    
+    // RIMOSSO il blocco "if (itemsMaster.length === 0) return;" 
+    // perché vogliamo inviare anche una lista vuota!
+
     let currentSettings = getGlobalSettings();
     let casseExport = itemsMaster.map(c => { 
         return { 
             id: c.id, 
-            L: c.L, 
-            P: c.P, 
-            H: c.H, 
-            pesoNetto: c.pesoNetto, 
+            L: c.L, P: c.P, H: c.H, pesoNetto: c.pesoNetto, 
             results: { 
                 set: currentSettings, 
                 dimF: c.results.dimensioniFinali,
@@ -935,12 +946,12 @@ function sendToCuckooView(silent = false) {
     
     if(!ccvData.ccb) ccvData.ccb = {};
     ccvData.ccb.type = "CuckooBox";
-    ccvData.ccb.crates = casseExport;
+    ccvData.ccb.crates = casseExport; // Sarà [] se non ci sono casse
     ccvData.ccb.settings = currentSettings;
     
     localStorage.setItem('cuckoo_view_transfer_data', JSON.stringify(ccvData));
     
-    if(!silent) alert(`✅ Dati di produzione (CCB) aggiornati globalmente!\nApri CCV (Viola) per visualizzarli ed esportare il progetto.`);
+    if(!silent && itemsMaster.length > 0) alert(`✅ Dati aggiornati in View!`);
 }
 
 // ==========================================
