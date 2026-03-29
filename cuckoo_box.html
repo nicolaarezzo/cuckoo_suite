@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cuckoo Box v4.2 - Production & Reinforcements Fixed</title>
+    <title>Cuckoo Box</title>
     
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#3b82f6">
@@ -294,7 +294,7 @@
     <div class="toggle-tab-app" onclick="toggleSidebar()">MENU CCB</div>
     <div class="sidebar-content">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-            <h2 style="margin:0; color: #3b82f6; font-size: 1.4em;">Cuckoo Box v4.2</h2>
+            <h2 style="margin:0; color: #3b82f6; font-size: 1.4em;">Cuckoo Box</h2>
         </div>
 
         <div class="card" style="border-left: 4px solid #10b981; background: #064e3b; text-align: center; padding: 20px;">
@@ -381,6 +381,14 @@ let boxObserver = null;
 let cassaIdCounter = 1;
 
 window.onload = () => { 
+    // Recupera le casse salvate in precedenza
+    let saved = localStorage.getItem('cuckoo_box_persistence_db');
+    if (saved) {
+        try {
+            itemsMaster = JSON.parse(saved);
+        } catch(e) { console.error("Errore ripristino memoria CCB"); }
+    }
+    
     checkCCBImportQueue(); 
     renderBoxes(); 
 };
@@ -422,6 +430,7 @@ function checkCCBImportQueue() {
                 localStorage.setItem('cuckoo_box_import_queue', '[]');
                 writeLog(`Ricevute ${queue.length} opere da CCE!`);
                 renderBoxes();
+                saveCCBState();
                 
                 // AGGIUNTO QUI: Invia a Cuckoo View in silenzio dopo aver importato
                 sendToCuckooView(true); 
@@ -479,6 +488,11 @@ function exportToCuckooNest() {
 function writeLog(m) { 
     let l = document.getElementById('log'); 
     l.innerHTML = `<div>> ${m}</div>` + l.innerHTML; 
+}
+
+// Salva lo stato attuale di CCB per non perdere il lavoro al refresh
+function saveCCBState() {
+    localStorage.setItem('cuckoo_box_persistence_db', JSON.stringify(itemsMaster));
 }
 
 function toggleRinforziGlobal() {
@@ -652,6 +666,7 @@ function autoSyncItemToCCE(item) {
 function ricalcolaTutto() { 
     itemsMaster.forEach(item => calcolaBox(item)); 
     renderBoxes();
+    saveCCBState();
     sendToCuckooView(true);
 }
 
@@ -675,11 +690,13 @@ function aggiungiCassaManuale() {
     writeLog(`Cassa manuale creata.`); 
     renderBoxes();
     sendToCuckooView(true);
+    if(typeof saveCCBState === "function") saveCCBState();
 }
 
 function rimuoviCassa(index) { 
     itemsMaster.splice(index, 1); 
     renderBoxes();
+    saveCCBState();
     sendToCuckooView(true); 
 }
 
@@ -709,7 +726,6 @@ function renderBoxes() {
             infoExtra = `Contiene: <b>${item.masterData.titolo}</b>`;
         }
 
-        // HTML della Cassa aggiornato con i comandi vista Ortogonale e Raggi X
         card.innerHTML = `
             <div class="box-header">
                 <div>
@@ -726,7 +742,6 @@ function renderBoxes() {
                         <label><input type="checkbox" id="show-rin-${index}" ${rinfChecked}> 🔨 Rinforzi</label>
                         <div class="controls-divider"></div>
                         <label style="color:#3b82f6;"><input type="checkbox" id="xray-${index}"> 🩻 Raggi X</label>
-                        <label style="color:#10b981;"><input type="checkbox" id="ortho-${index}"> 📐 Ortogonale</label>
                     </div>
                     <div class="canvas-3d-target" data-idx="${index}" id="c3d-${index}"></div>
                 </div>
@@ -735,7 +750,6 @@ function renderBoxes() {
                         <tr><th>Vano Intero (cm)</th><td>${(item.L/10).toFixed(1)} x ${(item.P/10).toFixed(1)} x ${(item.H/10).toFixed(1)}</td></tr>
                         <tr><th>Ingombro Esterno (cm)</th><td>${(dimF.lExt/10).toFixed(1)} x ${(dimF.pExt/10).toFixed(1)} x ${(dimF.hExt/10).toFixed(1)}</td></tr>
                     </table>
-                    
                     <div style="display:flex; gap:10px; margin-bottom:15px;">
                         <div style="background:#e2e8f0; padding:8px; border-radius:4px; flex:1; text-align:center;">
                             <div style="font-size:10px;">TARA (Legno)</div>
@@ -746,7 +760,6 @@ function renderBoxes() {
                             <div style="color:#3b82f6; font-size: 16px;"><b>${item.pesoNetto||0} KG</b></div>
                         </div>
                     </div>
-                    
                     <div style="display:flex; gap: 15px;">
                         <div style="flex:1;">
                             <h4 style="color:#3b82f6; margin-bottom:5px; margin-top:0;">🧊 Imbottitura (mm)</h4>
@@ -771,12 +784,6 @@ function renderBoxes() {
                 if (!p5Instances[idx]) {
                     p5Instances[idx] = new p5(sketch3DBox(itemsMaster[idx], idx), entry.target); 
                 }
-            } else { 
-                if (p5Instances[idx]) { 
-                    p5Instances[idx].remove(); 
-                    p5Instances[idx] = null; 
-                    entry.target.innerHTML = ''; 
-                } 
             }
         });
     }, { rootMargin: '300px' }); 
@@ -843,16 +850,8 @@ const sketch3DBox = (item, index) => (p) => {
 
         let cbXray = document.getElementById(`xray-${index}`); 
         let xRay = cbXray ? cbXray.checked : false;
-        
-        let cbOrtho = document.getElementById(`ortho-${index}`); 
-        let ortho = cbOrtho ? cbOrtho.checked : false;
 
-        if (ortho) {
-            p.ortho(-p.width/2, p.width/2, -p.height/2, p.height/2, -5000, 5000);
-        } else {
-            p.perspective(); 
-        }
-
+        p.perspective(); // Forza sempre la prospettiva naturale
         p.rotateX(0.8); 
         p.rotateZ(0.5); 
         p.strokeWeight(0.5); 
@@ -864,7 +863,6 @@ const sketch3DBox = (item, index) => (p) => {
             p.pop(); 
         };
 
-        // Disegno Imbottitura
         if (showEta) { 
             let alpha = xRay ? 60 : 255;
             p.fill(240, 240, 240, alpha); 
@@ -877,7 +875,6 @@ const sketch3DBox = (item, index) => (p) => {
             drawP(l/2 + i/2, 0, 0, i, d, h); 
         }
         
-        // Disegno Cassa
         if (showCas) { 
             let alpha = xRay ? 60 : 255;
             p.fill(90, 50, 30, alpha); 
@@ -890,27 +887,22 @@ const sketch3DBox = (item, index) => (p) => {
             drawP(l/2 + i + legno/2, 0, 0, legno, pT - 2*legno, hT - 2*legno); 
         }
 
-        // RIPRISTINATO: Disegno Rinforzi
         if (showRin && item.results.rinf) {
             let alpha = xRay ? 120 : 255;
             p.fill(220, 170, 110, alpha); 
             p.stroke(120, 80, 40, alpha === 255 ? 255 : 150);
-            
-            // Rinforzi Base e Coperchio
             for(let zOff of [-hT/2 - rSpess/2, hT/2 + rSpess/2]) { 
                 drawP(0, pT/2 + rSpess - rW/2, zOff, lT + 2*rSpess, rW, rSpess); 
                 drawP(0, -pT/2 - rSpess + rW/2, zOff, lT + 2*rSpess, rW, rSpess); 
                 drawP(lT/2 + rSpess - rW/2, 0, zOff, rW, pT + 2*rSpess - 2*rW, rSpess); 
                 drawP(-lT/2 - rSpess + rW/2, 0, zOff, rW, pT + 2*rSpess - 2*rW, rSpess); 
             }
-            // Rinforzi Fronte e Retro
             for(let yOff of [pT/2 + rSpess/2, -pT/2 - rSpess/2]) { 
                 drawP(0, yOff, hT/2 - rW/2, lT + 2*rSpess, rSpess, rW); 
                 drawP(0, yOff, -hT/2 + rW/2, lT + 2*rSpess, rSpess, rW); 
                 drawP(lT/2 + rSpess - rW/2, yOff, 0, rW, rSpess, hT - 2*rW); 
                 drawP(-lT/2 - rSpess + rW/2, yOff, 0, rW, rSpess, hT - 2*rW); 
             }
-            // Rinforzi Fianchi Sx e Dx
             for(let xOff of [lT/2 + rSpess/2, -lT/2 - rSpess/2]) { 
                 drawP(xOff, 0, hT/2 - rW/2, rSpess, pT, rW); 
                 drawP(xOff, 0, -hT/2 + rW/2, rSpess, pT, rW); 

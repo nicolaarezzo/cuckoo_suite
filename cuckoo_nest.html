@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <title>Cuckoo Nest v14.31 - Suite Receiver & Multi-Vehicle</title>
+    <title>Cuckoo Nest</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#ef4444">
     <link rel="apple-touch-icon" href="icon-192.png">
@@ -373,51 +373,17 @@
 </head>
 <body>
 
-<div id="guideModal" class="modal-overlay">
-    <div class="modal-content" style="max-width: 600px; padding: 30px;">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-            <h2 style="margin:0;">📖 Guida Rapida - Cuckoo Nest</h2>
-            <button onclick="closeGuide()" style="width: auto; background: none; color: #94a3b8; font-size: 20px; border:none; cursor:pointer;">✖</button>
-        </div>
-        <div style="font-size: 13px; line-height: 1.6; color: #e2e8f0; margin-top: 10px;">
-            <p><b style="color: #3b82f6;">1. IMPORTAZIONE DATI</b><br>
-            Le casse arrivano automaticamente in banchina se inviate da <b>CCE</b> (Opere Nude) o da <b>CCB</b> (Casse finite con Tara).</p>
-
-            <p><b style="color: #10b981;">2. GESTIONE MANUALE CASSE (Vista Pianta)</b><br>
-            • <b>Spostamento:</b> Trascina la cassa partendo dal suo centro.<br>
-            • <b>Rotazione Piana (L ↔ P):</b> Clicca sui bordi laterali della cassa.<br>
-            • <b>Ribaltamento (L/P ↔ H):</b> Clicca vicino agli angoli. Se modifichi l'altezza originale, la cassa diventerà <b style="color: #facc15;">Gialla</b> per avvisarti del ribaltamento.</p>
-
-            <p><b style="color: #f59e0b;">3. VINCOLI DI IMPILAMENTO (Click sul quadratino in alto a sx)</b><br>
-            Imposta le regole della cassa cliccando ripetutamente sul quadratino al suo interno:<br>
-            ⬜ <b>Nessun Vincolo:</b> Impilabile ovunque.<br>
-            <span class="flag-icon" style="background: linear-gradient(to bottom, #cbd5e1 50%, #654321 50%); margin-left: 0; display: inline-block; width: 10px; height: 10px; border: 1px solid #1e293b;"></span> <b>Solo Fondo:</b> Obbligo a terra. Non le si può appoggiare nulla sopra.<br>
-            <span class="flag-icon" style="background: linear-gradient(to bottom, #cbd5e1 33%, #654321 33%, #654321 66%, #cbd5e1 66%); margin-left: 0; display: inline-block; width: 10px; height: 10px; border: 1px solid #1e293b;"></span> <b>Base Portante:</b> Obbligo a terra. Fa da base per altre casse.<br>
-            <span class="flag-icon" style="background: linear-gradient(to bottom, #654321 50%, #cbd5e1 50%); margin-left: 0; display: inline-block; width: 10px; height: 10px; border: 1px solid #1e293b;"></span> <b>Solo Top:</b> Non regge pesi. Va posizionata in cima alla colonna.</p>
-
-            <p><b style="color: #8b5cf6;">4. CODICE COLORI E SICUREZZA</b><br>
-            • <b style="color: #ffffff;">Bianco:</b> Posizionata a terra in modo standard.<br>
-            • <b style="color: #10b981;">Verde:</b> Cassa impilata in sicurezza.<br>
-            • <b style="color: #facc15;">Giallo:</b> Cassa ribaltata (altezza variata).<br>
-            • <b style="color: #3b82f6;">Blu:</b> Spostamento manuale libero (forzato fuori dall'algoritmo).</p>
-
-            <p style="background: #1e293b; padding: 10px; border-left: 3px solid #f59e0b;">💡 <b>Suggerimento:</b> Usa sempre la scorciatoia da tastiera <b>CTRL + Z</b> (o il pulsante Annulla) per ripristinare uno spostamento errato o un ricalcolo imprevisto.</p>
-        </div>
-        <button class="btn-primary" onclick="closeGuide()" style="margin-top: 10px; padding: 12px; font-size: 14px;">INIZIA A LAVORARE</button>
-    </div>
-</div>
-
 <div id="sidebar">
     <div class="toggle-tab-app" onclick="toggleSidebar()">MENU CCN</div>
     <div class="sidebar-content">
         <div style="display: flex; flex-direction: column; gap: 4px; justify-content: center; align-items: flex-start; margin-bottom: 10px;">
             <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
                 <div style="display: flex; align-items: center; gap: 8px;">
-                    <h2 style="margin:0; color: #ef4444; font-size: 1.4em;">Cuckoo Nest v14.30</h2>
-                    <button onclick="openGuide()" style="background: #334155; color: #cbd5e1; border: none; border-radius: 50%; width: 22px; height: 22px; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; padding: 0;" title="Guida">?</button>
+                    <h2 style="margin:0; color: #ef4444; font-size: 1.4em;">Cuckoo Nest</h2>
+                    
                 </div>
             </div>
-            <span style="font-style: italic; color: #94a3b8; font-size: 11px;">"Logistics & Cargo Nesting"</span>
+            <span style="font-style: italic; color: #94a3b8; font-size: 11px;">"Qualcuno volò sul nido del cuculo"</span>
         </div>
     
     <div class="card">
@@ -868,14 +834,6 @@ function aggiungiViaggioVuoto() {
     writeLog(`Viaggio #${nextId + 1} creato manualmente. Ora puoi cambiare mezzo o trascinare casse.`, "#3b82f6");
 }
 
-function openGuide() { 
-    document.getElementById('guideModal').style.display = 'flex'; 
-}
-
-function closeGuide() { 
-    document.getElementById('guideModal').style.display = 'none'; 
-    localStorage.setItem('boatload_guide_seen', 'true'); 
-}
 
 function toggleSidebar() {
     document.getElementById('sidebar').classList.toggle('collapsed');
@@ -1290,7 +1248,7 @@ function renderAll() {
                 listHTML += `<tr>
                     <td>${i.id}</td>
                     <td>${i.L} x ${i.P} x ${i.H}</td>
-                    <td>${pesoStr}</td>
+                    <td>${ pesoStr }</td>
                     <td>${getCardinalName(i.stackMode)}</td>
                     <td>${stato}</td>
                 </tr>`;
@@ -1317,7 +1275,7 @@ function renderAll() {
                         </div>
                     </div>
                     <div class="${class2d}" id="c2d-${idx}">
-                        <button class="print-hide" style="position: absolute; top: 10px; right: 10px; z-index: 10; padding: 6px 12px; font-size: 10px; width: auto; margin: 0; background: ${btnColor}; color: white; border-radius: 4px; box-shadow: 0 4px 6px rgba(0,0,0,0.2);" onclick="toggleFullscreen2D(${v.id})">${btnText}</button>
+                        
                     </div>
                 </div>
                 <div class="print-only" style="padding: 10px 20px;">
@@ -1406,50 +1364,29 @@ const sketch2D = (v, banchina, domId) => (p) => {
     p.windowResized = () => {
         let domNode = document.getElementById(domId); 
         if(!domNode) return;
-        
         canvasW = domNode.clientWidth || 800; 
         canvasH = domNode.clientHeight || 400;
         p.resizeCanvas(canvasW, canvasH);
-        
         let bL = v.L || 700;
         let bP = v.P || 240;
-        let spazioX = bP + 300; 
-        let spazioY = bL + 40; 
-        sc = Math.min(canvasW / spazioX, canvasH / spazioY); 
+        sc = Math.min(canvasW / (bP + 300), canvasH / (bL + 40)); 
     };
 
     p.setup = () => {
         let domNode = document.getElementById(domId);
         canvasW = domNode.clientWidth || 800; 
         canvasH = domNode.clientHeight || 400;
-        
         let bL = v.L || 700;
         let bP = v.P || 240;
-        let spazioX = bP + 300; 
-        let spazioY = bL + 40; 
-        sc = Math.min(canvasW / spazioX, canvasH / spazioY); 
-        
+        sc = Math.min(canvasW / (bP + 300), canvasH / (bL + 40)); 
         p.createCanvas(canvasW, canvasH); 
         p5Instances.push(p);
 
-        let printWidth = (bP * sc) + 40; 
-        domNode.style.setProperty('--print-w', printWidth + 'px');
-        
+        // Posizionamento automatico casse in banchina (solo visivo)
         let startBanchinaY = (bP * sc + 40) / sc;
-        
-        // BANCHINA FIX: Riposizionamento rigido e dinamico ogni volta
-        let banchinaDaOrdinare = banchina.filter(b => !b.isEntity);
-        
-        let spazioBanchinaW = (canvasW / sc) - (bP + 40);
-        let numColonne = Math.max(2, Math.floor(spazioBanchinaW / 140)); 
-        
+        let banchinaDaOrdinare = itemsMaster.filter(b => b.trip === -1 && !b.isEntity);
+        let numColonne = Math.max(2, Math.floor(((canvasW / sc) - (bP + 40)) / 140)); 
         let stepY = 150;
-        let righeNecessarie = Math.ceil(banchinaDaOrdinare.length / numColonne);
-        let spazioBanchinaH = (canvasH / sc) - 40;
-        
-        if ((righeNecessarie * stepY) > spazioBanchinaH) {
-            stepY = Math.max(25, spazioBanchinaH / righeNecessarie);
-        }
 
         banchinaDaOrdinare.forEach((b, i) => { 
             let col = i % numColonne;
@@ -1462,411 +1399,141 @@ const sketch2D = (v, banchina, domId) => (p) => {
     p.draw = () => {
         let bL = v.L || 700;
         let bP = v.P || 240;
-        
         p.background(255); 
         let cOffX = 20; 
-        
         p.push(); 
         p.translate(cOffX, 20);
 
-        p.fill(240, 249, 255); 
-        p.stroke(186, 230, 253); 
-        p.strokeWeight(2); 
+        // Disegno Vano di Carico
+        p.fill(240, 249, 255); p.stroke(186, 230, 253); p.strokeWeight(2); 
         p.rect(0, 0, bP * sc, bL * sc); 
         
+        // Area Banchina
         if (!isPrintingPDF) {
             let banchinaW = canvasW - (bP * sc) - 40;
             if(banchinaW > 0) {
-                p.fill(241, 245, 249); 
-                p.stroke(203, 213, 225); 
-                p.strokeWeight(1); 
+                p.fill(241, 245, 249); p.stroke(203, 213, 225); p.strokeWeight(1); 
                 p.rect(bP * sc + 20, 0, banchinaW, canvasH - 40); 
-                
-                p.fill(148, 163, 184); 
-                p.noStroke(); 
-                p.textSize(11); 
-                p.textAlign(p.LEFT, p.TOP); 
-                p.textStyle(p.BOLD); 
-                p.text("BANCHINA (Trascina fuori le casse o inseriscile)", bP * sc + 30, 10); 
-                p.textStyle(p.NORMAL);
+                p.fill(148, 163, 184); p.noStroke(); p.textSize(11); p.text("BANCHINA", bP * sc + 30, 15);
             }
         }
 
-        let allVisible = [...v.items, ...banchina].sort((a, b) => a.z - b.z);
-        let hoveredItem = null;
+        // --- FILTRO ANTI-SDOPPIAMENTO ---
+        let allVisible = itemsMaster.filter(i => {
+            if (dragItm && dragItm.id === i.id) {
+                // Disegna la cassa in movimento SOLO sul camion dove si trova il mouse
+                return (p.mouseX > 0 && p.mouseX < p.width && p.mouseY > 0 && p.mouseY < p.height);
+            }
+            return i.trip === v.id || i.trip === -1;
+        });
+        allVisible.sort((a, b) => a.z - b.z);
 
+        let hoveredItem = null;
         allVisible.forEach(i => {
-            if (isPrintingPDF && i.trip === -1) {
-                return;
-            }
-            
-            let sx = i.y * sc;
-            let sy = i.x * sc;
-            let sw = i.P * sc;
-            let sh = i.L * sc;
-            
+            let sx = i.y * sc; let sy = i.x * sc;
+            let sw = i.P * sc; let sh = i.L * sc;
             let isHover = p.mouseX - cOffX > sx && p.mouseX - cOffX < sx + sw && p.mouseY - 20 > sy && p.mouseY - 20 < sy + sh;
-            if(isHover) {
-                hoveredItem = i;
-            }
+            if(isHover) hoveredItem = i;
 
             p.strokeWeight(dragItm === i ? 2 : 1); 
-            
-            if (i.manual) {
-                p.stroke("#f59e0b");
-            } else {
-                p.stroke("#1e293b");
-            }
-            
-            if (i.z > 0) {
-                p.fill("#10b981");
-            } else if (i.trip === -1) {
-                p.fill("#e2e8f0");
-            } else {
-                p.fill("#ffffff");
-            }
-            
+            p.stroke(i.manual ? "#f59e0b" : "#1e293b");
+            p.fill(i.z > 0 ? "#10b981" : (i.trip === -1 ? "#e2e8f0" : "#ffffff"));
             p.rect(sx, sy, sw, sh, 2);
 
+            // Cornici rotazione (Preservate tutte le funzioni originali)
             if(isHover && !isMov && dragItm === null && !isPrintingPDF && !i.isEntity) {
-                let rx = p.mouseX - cOffX - sx; 
-                let ry = p.mouseY - 20 - sy; 
-                let edgeX = Math.min(15 * sc, sw / 3); 
-                let edgeY = Math.min(15 * sc, sh / 3);
-                
-                let isGreen = (rx < edgeX || rx > sw - edgeX); 
-                let isRed = (ry < edgeY || ry > sh - edgeY);
-                
-                p.noFill(); 
-                p.strokeWeight(3);
-                
-                if (isGreen && isRed) {
-                    let dx = Math.min(rx, sw - rx); 
-                    let dy = Math.min(ry, sh - ry);
-                    if (dx <= dy) { 
-                        p.stroke("#22c55e"); 
-                        p.line(sx, sy, sx, sy + sh); 
-                        p.line(sx + sw, sy, sx + sw, sy + sh); 
-                    } else { 
-                        p.stroke("#ef4444"); 
-                        p.line(sx, sy, sx + sw, sy); 
-                        p.line(sx, sy + sh, sx + sw, sy + sh); 
-                    }
-                } else if (isGreen) { 
-                    p.stroke("#22c55e"); 
-                    p.line(sx, sy, sx, sy + sh); 
-                    p.line(sx + sw, sy, sx + sw, sy + sh); 
-                } else if (isRed) { 
-                    p.stroke("#ef4444"); 
-                    p.line(sx, sy, sx + sw, sy); 
-                    p.line(sx, sy + sh, sx + sw, sy + sh); 
-                } else { 
-                    p.stroke("#3b82f6"); 
-                    p.rect(sx + 4, sy + 4, sw - 8, sh - 8); 
-                }
+                let rx = p.mouseX - cOffX - sx; let ry = p.mouseY - 20 - sy; 
+                let edgeX = Math.min(15 * sc, sw / 3); let edgeY = Math.min(15 * sc, sh / 3);
+                p.noFill(); p.strokeWeight(3);
+                if (rx < edgeX || rx > sw - edgeX) { p.stroke("#22c55e"); p.line(sx, sy, sx, sy + sh); p.line(sx + sw, sy, sx + sw, sy + sh); }
+                else if (ry < edgeY || ry > sh - edgeY) { p.stroke("#ef4444"); p.line(sx, sy, sx + sw, sy); p.line(sx, sy + sh, sx + sw, sy + sh); }
+                else { p.stroke("#3b82f6"); p.rect(sx+4, sy+4, sw-8, sh-8); }
             }
-            
-            if(!i.isEntity || i.id.startsWith('TP-')) {
-                drawCardinalFlag(p, sx + 2, sy + 2, 10, i.stackMode);
-            }
-            
-            p.fill(0); 
-            p.noStroke(); 
-            p.textSize(Math.max(8, 10 * sc)); 
-            p.textAlign(p.CENTER, p.CENTER); 
-            
-            let labelText = `${i.id}${i.z > 0 ? '(S)' : ''}`;
-            p.text(labelText, sx + sw / 2, sy + sh / 2);
+            if(!i.isEntity) drawCardinalFlag(p, sx + 2, sy + 2, 10, i.stackMode);
+            p.fill(0); p.noStroke(); p.textSize(Math.max(8, 10 * sc)); p.textAlign(p.CENTER, p.CENTER); 
+            p.text(`${i.id}${i.z > 0 ? '(S)' : ''}`, sx + sw / 2, sy + sh / 2);
         });
-        
         p.pop();
 
         if (hoveredItem && !isMov && dragItm === null && !isPrintingPDF) {
-            let mx = p.mouseX - cOffX; 
-            let my = p.mouseY - 20; 
-            p.textSize(10);
-            
-            let riga1 = `ID: ${hoveredItem.id} \nDim: ${hoveredItem.L}x${hoveredItem.P}x${hoveredItem.H}`;
-            if (hoveredItem.peso && hoveredItem.peso !== "") {
-                riga1 += ` | ⚖️ ${hoveredItem.peso} KG`;
-            }
-            let riga2 = `Vincolo: ${getCardinalName(hoveredItem.stackMode)}`;
-            if (hoveredItem.id === 'UOMO') riga2 = "Uomo (Riferimento visivo)";
-            
-            let boxWidth = Math.max(p.textWidth(riga1), p.textWidth(riga2)) + 16; 
-            let boxHeight = 44;
-            
-            let tX = mx + 20; 
-            let tY = my + 25; 
-            
-            if (cOffX + tX + boxWidth > canvasW) {
-                tX = mx - boxWidth - 10;
-            }
-            if (20 + tY + boxHeight > canvasH) {
-                tY = my - boxHeight - 10;
-            } 
-
-            p.fill(30, 41, 59, 230); 
-            p.stroke(100); 
-            p.strokeWeight(1); 
-            p.rect(tX, tY, boxWidth, boxHeight, 4); 
-            
-            p.fill(255); 
-            p.noStroke(); 
-            p.textAlign(p.LEFT, p.TOP); 
-            p.text(riga1 + "\n" + riga2, tX + 8, tY + 6);
+            p.fill(30, 41, 59, 230); p.stroke(100); p.rect(p.mouseX + 10, p.mouseY + 10, 150, 40, 4); 
+            p.fill(255); p.noStroke(); p.textSize(10); p.text(`ID: ${hoveredItem.id}\nDim: ${hoveredItem.L}x${hoveredItem.P}x${hoveredItem.H}`, p.mouseX + 18, p.mouseY + 16);
         }
     };
 
     p.mousePressed = () => {
         if(isPrintingPDF) return;
-        
-        startX = p.mouseX; 
-        startY = p.mouseY; 
+        startX = p.mouseX; startY = p.mouseY; 
         let cOffX = 20; 
-        
-        let allPossible = [...v.items, ...banchina].sort((a,b) => b.z - a.z);
-        
+        let allPossible = itemsMaster.filter(i => i.trip === v.id || i.trip === -1);
         for(let i of allPossible) {
-            let mx = (p.mouseX - cOffX) / sc; 
-            let my = (p.mouseY - 20) / sc;
-            
+            let mx = (p.mouseX - cOffX) / sc; let my = (p.mouseY - 20) / sc;
             if(mx > i.y && mx < i.y + i.P && my > i.x && my < i.x + i.L) {
                 saveState(); 
-                
                 if(mx > i.y && mx < i.y + 14 / sc && my > i.x && my < i.x + 14 / sc && i.id !== 'UOMO') { 
-                    i.stackMode = (i.stackMode + 1) % 4; 
-                    return false; 
+                    i.stackMode = (i.stackMode + 1) % 4; return false; 
                 }
-                
-                dragItm = i; 
-                ox = mx - i.y; 
-                oy = my - i.x; 
-                isMov = false; 
-                
-                dragItm.safeX = i.x; 
-                dragItm.safeY = i.y; 
-                dragItm.safeZ = i.z; 
-                dragItm.safeChild = i.isChild; 
-                dragItm.safeL = i.L; 
-                dragItm.safeP = i.P; 
-                dragItm.safeH = i.H;
-                
+                dragItm = i; ox = mx - i.y; oy = my - i.x; isMov = false; 
+                dragItm.safeX = i.x; dragItm.safeY = i.y; dragItm.safeZ = i.z; 
+                dragItm.safeTrip = i.trip; dragItm.safeL = i.L; dragItm.safeP = i.P; dragItm.safeH = i.H;
                 return false; 
             }
         }
     };
 
     p.mouseDragged = () => { 
-        if(dragItm && !isPrintingPDF){ 
-            if(p.dist(startX, startY, p.mouseX, p.mouseY) > 3) {
-                isMov = true;
-            }
+        if(dragItm){ 
+            if(p.dist(startX, startY, p.mouseX, p.mouseY) > 3) isMov = true;
             dragItm.y = (p.mouseX - 20) / sc - ox; 
             dragItm.x = (p.mouseY - 20) / sc - oy; 
-            dragItm.z = 0; 
-            dragItm.isChild = false;
-            return false; 
+            dragItm.z = 0; return false; 
         } 
     };
 
     p.mouseReleased = () => {
-        if(dragItm && !isPrintingPDF) {
-            let bL = v.L || 700; 
-            let bP = v.P || 240; 
-            let mH = parseFloat(document.getElementById('mH').value) || 5;
-            
+        if(dragItm) {
+            let bL = v.L || 700; let bP = v.P || 240; 
             let isCurrentlyInBanchina = dragItm.y > bP; 
-            let cOffX = 20; 
 
             if(!isMov) {
                 if (!dragItm.isEntity) {
-                    let rx = (p.mouseX - cOffX) - dragItm.y * sc; 
+                    let rx = (p.mouseX - 20) - dragItm.y * sc; 
                     let ry = (p.mouseY - 20) - dragItm.x * sc; 
-                    let sw = dragItm.P * sc; 
-                    let sh = dragItm.L * sc;
-                    
-                    let edgeX = Math.min(15 * sc, sw / 3); 
-                    let edgeY = Math.min(15 * sc, sh / 3);
-                    
-                    let isGreen = (rx < edgeX || rx > sw - edgeX); 
-                    let isRed = (ry < edgeY || ry > sh - edgeY);
-
-                    if (isGreen && isRed) { 
-                        let dx = Math.min(rx, sw - rx); 
-                        let dy = Math.min(ry, sh - ry); 
-                        if (dx <= dy) { 
-                            let t = dragItm.P; 
-                            dragItm.P = dragItm.H; 
-                            dragItm.H = t; 
-                        } else { 
-                            let t = dragItm.L; 
-                            dragItm.L = dragItm.H; 
-                            dragItm.H = t; 
-                        } 
-                    } else if (isGreen) { 
-                        let t = dragItm.P; 
-                        dragItm.P = dragItm.H; 
-                        dragItm.H = t; 
-                    } else if (isRed) { 
-                        let t = dragItm.L; 
-                        dragItm.L = dragItm.H; 
-                        dragItm.H = t; 
-                    } else { 
-                        let t = dragItm.L; 
-                        dragItm.L = dragItm.P; 
-                        dragItm.P = t; 
-                    }
+                    let sw = dragItm.P * sc; let sh = dragItm.L * sc;
+                    let edgeX = Math.min(15 * sc, sw / 3); let edgeY = Math.min(15 * sc, sh / 3);
+                    if ((rx < edgeX || rx > sw - edgeX) && (ry < edgeY || ry > sh - edgeY)) {
+                         let dx = Math.min(rx, sw - rx); let dy = Math.min(ry, sh - ry);
+                         if (dx <= dy) { let t = dragItm.P; dragItm.P = dragItm.H; dragItm.H = t; }
+                         else { let t = dragItm.L; dragItm.L = dragItm.H; dragItm.H = t; }
+                    } else if (rx < edgeX || rx > sw - edgeX) { let t = dragItm.P; dragItm.P = dragItm.H; dragItm.H = t; }
+                    else if (ry < edgeY || ry > sh - edgeY) { let t = dragItm.L; dragItm.L = dragItm.H; dragItm.H = t; }
+                    else { let t = dragItm.L; dragItm.L = dragItm.P; dragItm.P = t; }
                 }
-
-                if (!isCurrentlyInBanchina && dragItm.trip !== -1) {
-                    let col = v.items.some(o => 
-                        o.id !== dragItm.id && 
-                        o.z === dragItm.z && 
-                        dragItm.x < o.x + o.L && 
-                        dragItm.x + dragItm.L > o.x && 
-                        dragItm.y < o.y + o.P && 
-                        dragItm.y + dragItm.P > o.y
-                    );
-                    
-                    if((dragItm.x + dragItm.L > bL || dragItm.y + dragItm.P > bP) || col) { 
-                        dragItm.L = dragItm.safeL; 
-                        dragItm.P = dragItm.safeP; 
-                        dragItm.H = dragItm.safeH; 
-                    } else { 
-                        dragItm.manual = true; 
-                    }
-                } else { 
-                    dragItm.manual = true; 
-                }
+                dragItm.manual = true;
             } else {
-                // 🛑 NUOVO: CONTROLLO ALTEZZA DRAG & DROP MANUALE
-                if (!isCurrentlyInBanchina && dragItm.H > v.H) {
-                    alert(`⚠️ ATTENZIONE: La cassa (H: ${dragItm.H} cm) è più alta del tetto del veicolo (H: ${v.H} cm). Inserimento annullato.`);
-                    
-                    // Rimbalza la cassa al punto di partenza (es. in banchina)
-                    dragItm.x = dragItm.safeX; 
-                    dragItm.y = dragItm.safeY; 
-                    dragItm.z = dragItm.safeZ; 
-                    dragItm.isChild = dragItm.safeChild;
-                    
-                    dragItm = null; 
-                    renderAll(); 
-                    return false; 
-                }
-
                 if(isCurrentlyInBanchina) { 
-                    let changed = (dragItm.trip !== -1); 
-                    dragItm.trip = -1; 
-                    dragItm.manual = false; 
-                    if (changed) {
-                        setTimeout(() => {
-                            viaggi = [];
-                            let tripMap = {};
-                            itemsMaster.forEach(itm => {
-                                if (itm.trip !== -1) {
-                                    if(!tripMap[itm.trip]) {
-                                        tripMap[itm.trip] = [];
-                                    }
-                                    tripMap[itm.trip].push(itm);
-                                }
-                            });
-                            for (let key in tripMap) {
-                                let tData = tripMap[key];
-                                let oldTrip = viaggiDaMostrare.find(vt => vt.id === parseInt(key));
-                                let vPreset = oldTrip ? oldTrip.vehiclePreset : "3";
-                                viaggi.push({ 
-                                    id: parseInt(key), 
-                                    items: tData,
-                                    vehiclePreset: vPreset,
-                                    L: capienzaPresets[vPreset].L, 
-                                    P: capienzaPresets[vPreset].P, 
-                                    H: capienzaPresets[vPreset].H
-                                });
-                            }
-                            viaggi.sort((a, b) => a.id - b.id);
-                            renderAll();
-                        }, 10); 
-                    } else {
-                        renderAll();
-                    }
+                    dragItm.trip = -1; dragItm.manual = false; dragItm.x = 9999; dragItm.y = 9999;
                 } else {
-                    let rDrag = getNavRules(dragItm.stackMode); 
-                    let basi = v.items.filter(b => getNavRules(b.stackMode).canBeBase && b.id !== dragItm.id);
-                    basi.sort((a,b) => (b.z + b.H) - (a.z + a.H));
-
-                    for(let base of basi) { 
-                        if (rDrag.canBeChild) { 
-                            let cx = dragItm.x + dragItm.L / 2; 
-                            let cy = dragItm.y + dragItm.P / 2; 
-                            
-                            if(cx >= base.x && cx <= base.x + base.L && cy >= base.y && cy <= base.y + base.P) { 
-                                dragItm.z = base.z + base.H + mH; 
-                                dragItm.isChild = true; 
-                                break; 
-                            } 
-                        } 
-                    }
-                    
-                    let col = v.items.some(o => 
-                        o.id !== dragItm.id && 
-                        o.z === dragItm.z && 
-                        dragItm.x < o.x + o.L && 
-                        dragItm.x + dragItm.L > o.x && 
-                        dragItm.y < o.y + o.P && 
-                        dragItm.y + dragItm.P > o.y
-                    );
-                    
-                    if((dragItm.x < 0 || dragItm.y < 0 || dragItm.x + dragItm.L > bL || dragItm.y + dragItm.P > bP) || col) {
-                        dragItm.x = dragItm.safeX; 
-                        dragItm.y = dragItm.safeY; 
-                        dragItm.z = dragItm.safeZ; 
-                        dragItm.isChild = dragItm.safeChild;
-                        if(dragItm.trip === -1) renderAll();
-                    } else { 
-                        dragItm.manual = true; 
-                        let changed = (dragItm.trip !== v.id); 
-                        dragItm.trip = v.id; 
-                        if (changed) {
-                            setTimeout(() => {
-                                viaggi = [];
-                                let tripMap = {};
-                                itemsMaster.forEach(itm => {
-                                    if (itm.trip !== -1) {
-                                        if(!tripMap[itm.trip]) {
-                                            tripMap[itm.trip] = [];
-                                        }
-                                        tripMap[itm.trip].push(itm);
-                                    }
-                                });
-                                for (let key in tripMap) {
-                                    let oldTrip = viaggiDaMostrare.find(vt => vt.id === parseInt(key));
-                                    let vPreset = oldTrip ? oldTrip.vehiclePreset : "3";
-                                    viaggi.push({ 
-                                        id: parseInt(key), 
-                                        items: tripMap[key],
-                                        vehiclePreset: vPreset,
-                                        L: capienzaPresets[vPreset].L,
-                                        P: capienzaPresets[vPreset].P,
-                                        H: capienzaPresets[vPreset].H
-                                    });
+                    if (dragItm.H > v.H) { alert("Cassa troppo alta!"); dragItm.x = dragItm.safeX; dragItm.y = dragItm.safeY; dragItm.trip = dragItm.safeTrip; }
+                    else {
+                        let rDrag = getNavRules(dragItm.stackMode); 
+                        let basi = v.items.filter(b => getNavRules(b.stackMode).canBeBase && b.id !== dragItm.id);
+                        for(let base of basi) {
+                            if (rDrag.canBeChild) {
+                                let cx = dragItm.x + dragItm.L/2; let cy = dragItm.y + dragItm.P/2;
+                                if(cx >= base.x && cx <= base.x + base.L && cy >= base.y && cy <= base.y + base.P) {
+                                    dragItm.z = base.z + base.H + 5; dragItm.isChild = true; break;
                                 }
-                                viaggi.sort((a, b) => a.id - b.id);
-                                renderAll();
-                            }, 10); 
+                            }
                         }
+                        dragItm.trip = v.id; dragItm.manual = true;
                     }
                 }
             }
-            
-            let tempDrag = dragItm; 
-            dragItm = null; 
-            
-            if(tempDrag) {
-                return false;
-            }
+            dragItm = null; isMov = false;
+            // SINCRONIZZAZIONE TOTALE
+            setTimeout(() => { if(typeof rebuildTrips === 'function') rebuildTrips(); renderAll(); }, 20);
         }
-        dragItm = null;
     };
 };
 
@@ -1951,7 +1618,7 @@ function autoSyncTripsToCCE() {
         let index = db.findIndex(o => o.id === operaId);
 
         if (index !== -1) {
-            // Definiamo il nuovo stato del viaggio
+            // Definiamo le misure dell'opera originale
             let nuovoStato = (cassa.trip !== -1) ? `Viaggio #${cassa.trip + 1}` : "In Banchina";
             
             // Se lo stato in CCE è diverso da quello attuale in Nest, aggiorniamo
@@ -1966,6 +1633,30 @@ function autoSyncTripsToCCE() {
     if (isChanged) {
         localStorage.setItem('cuckoo_egg_db', JSON.stringify(db));
     }
+}
+
+function rebuildTrips() {
+    let tripMap = {};
+    // Usiamo itemsMaster come unica fonte
+    itemsMaster.forEach(itm => {
+        if (itm.trip !== -1) {
+            if(!tripMap[itm.trip]) {
+                // Cerchiamo se il viaggio esisteva già per mantenere il veicolo scelto
+                let oldTrip = viaggi.find(vt => vt.id === parseInt(itm.trip));
+                let vPreset = oldTrip ? oldTrip.vehiclePreset : document.getElementById('capienzaPreset').value;
+                tripMap[itm.trip] = {
+                    id: parseInt(itm.trip),
+                    items: [],
+                    vehiclePreset: vPreset,
+                    L: capienzaPresets[vPreset].L,
+                    P: capienzaPresets[vPreset].P,
+                    H: capienzaPresets[vPreset].H
+                };
+            }
+            tripMap[itm.trip].items.push(itm);
+        }
+    });
+    viaggi = Object.values(tripMap).sort((a, b) => a.id - b.id);
 }
 
 function autoSyncManualCrateToCCE(item) {

@@ -259,16 +259,31 @@ window.addEventListener('storage', function(e) {
 
 function checkIncomingData() {
     if(standaloneMode) return; // Se siamo in un file esportato bloccato, ignora il localstorage
-    let raw = localStorage.getItem('cuckoo_view_transfer_data');
-    if (raw) {
+    
+    // 1. Leggi il DATABASE MASTER (La Sorgente di Verità per la lista Opere)
+    // Questo assicura che le casse manuali aggiunte da Box e Nest siano visibili subito.
+    let rawDB = localStorage.getItem('cuckoo_egg_db');
+    if (rawDB) {
         try {
-            let data = JSON.parse(raw);
-            if (data.cce) GlobalProject.cce = data.cce;
+            GlobalProject.cce = JSON.parse(rawDB);
+        } catch(e) { console.error("Errore lettura DB Master in View", e); }
+    }
+
+    // 2. Leggi l'HUB DI TRASFERIMENTO (Per i dati tecnici 3D di Box e Nest)
+    let rawHub = localStorage.getItem('cuckoo_view_transfer_data');
+    if (rawHub) {
+        try {
+            let data = JSON.parse(rawHub);
+            // Prendiamo solo i dati specifici dei moduli, la lista opere la abbiamo già presa sopra
             if (data.ccb) GlobalProject.ccb = data.ccb;
             if (data.ccn) GlobalProject.ccn = data.ccn;
+            
             normalizeProjectData();
             updateUI();
-        } catch(e) { console.error(e); }
+        } catch(e) { console.error("Errore lettura Hub in View", e); }
+    } else {
+        // Se l'hub non c'è ancora, aggiorna comunque la UI con i dati del DB Master
+        updateUI();
     }
 }
 

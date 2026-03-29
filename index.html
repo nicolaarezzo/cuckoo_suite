@@ -144,21 +144,25 @@
     <input type="file" id="fileInpMaster" accept=".ccsf" style="display: none;" onchange="caricaMaster(event)">
 </div>
 
-        <button class="app-btn btn-ccv active" onclick="loadApp('ccv', this)">
-            📱 Cuckoo View
-        </button>
+        <!-- 1. Cuckoo Egg (ORA È IL PRIMO E ATTIVO) -->
+<button class="app-btn btn-cce active" onclick="loadApp('cce', this)">
+    🥚 Cuckoo Egg
+</button>
 
-        <button class="app-btn btn-cce" onclick="loadApp('cce', this)">
-            🥚 Cuckoo Egg
-        </button>
+<!-- 2. Cuckoo Box -->
+<button class="app-btn btn-ccb" onclick="loadApp('ccb', this)">
+    📦 Cuckoo Box
+</button>
 
-        <button class="app-btn btn-ccb" onclick="loadApp('ccb', this)">
-            📦 Cuckoo Box
-        </button>
+<!-- 3. Cuckoo Nest -->
+<button class="app-btn btn-ccn" onclick="loadApp('ccn', this)">
+    🚚 Cuckoo Nest
+</button>
 
-        <button class="app-btn btn-ccn" onclick="loadApp('ccn', this)">
-            🚚 Cuckoo Nest
-        </button>
+<!-- 4. Cuckoo View (SPOSTATO IN FONDO E NON ATTIVO) -->
+<button class="app-btn btn-ccv" onclick="loadApp('ccv', this)">
+    📱 Cuckoo View
+</button>
 
         <div style="margin-top: auto; padding: 15px; background: #020617; border-radius: 8px; border: 1px solid #1e293b; font-size: 11px; color: #cbd5e1; line-height: 1.5;">
             <b style="color: #3b82f6; font-size: 12px;">🤖 Motore IA (Cuckoo Brain)</b><br>
@@ -171,8 +175,8 @@
     </div>
 
     <div id="frames-container">
-        <iframe id="frame-ccv" class="app-frame active" src="cuckoo_view.html"></iframe>
-        <iframe id="frame-cce" class="app-frame" src="cuckoo_egg.html"></iframe>
+        <iframe id="frame-ccv" class="app-frame" src="cuckoo_view.html"></iframe>
+        <iframe id="frame-cce" class="app-frame active" src="cuckoo_egg.html"></iframe>
         <iframe id="frame-ccb" class="app-frame" src="cuckoo_box.html"></iframe>
         <iframe id="frame-ccn" class="app-frame" src="cuckoo_nest.html"></iframe>
     </div>
@@ -236,9 +240,12 @@
                     'cuckoo_egg_db', 
                     'cuckoo_box_import_queue', 
                     'cuckoo_nest_transfer_queue', 
-                    'cuckoo_view_transfer_data'
+                    'cuckoo_view_transfer_data',
+                    'cuckoo_nest_items_persistence',
+                    'cuckoo_nest_viaggi_persistence'
                 ];
                 keysToClear.forEach(key => localStorage.removeItem(key));
+                localStorage.removeItem('cuckoo_box_persistence_db');
                 alert("✨ Memoria dati pulita. I mezzi personalizzati sono stati mantenuti.");
                 window.location.reload(); 
             }
