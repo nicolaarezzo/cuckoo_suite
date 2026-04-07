@@ -291,17 +291,9 @@
 <body>
 
 <div id="sidebar">
-    <div class="toggle-tab-app" onclick="toggleSidebar()">MENU CCB</div>
+    <div class="toggle-tab-app" onclick="toggleSidebar()">PRODUZIONE</div>
     <div class="sidebar-content">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-            <h2 style="margin:0; color: #3b82f6; font-size: 1.4em;">Cuckoo Box</h2>
-        </div>
-
-        <div class="card" style="border-left: 4px solid #10b981; background: #064e3b; text-align: center; padding: 20px;">
-            <span style="font-size:30px;">📡</span><br>
-            <b style="color: #6ee7b7;">In attesa di Opere da CCE...</b><br>
-            <span style="font-size:10px; color:#a7f3d0;">Seleziona le opere in CCE e premi "A Produzione". Appariranno qui in automatico.</span>
-        </div>
+        
 
         <div class="card" style="border-left: 4px solid #3b82f6;">
             <label style="color: #60a5fa;">Aggiungi Cassa Manuale (CM)</label>
@@ -357,12 +349,13 @@
 
         <div id="log">> Modulo Produzione attivo.</div>
 
-        <div style="margin-top: 5px; display: flex; flex-direction: column; gap: 5px;">
-            <button class="btn-danger" style="background:#ef4444;" onclick="exportToCuckooNest()">🚀 INVIA AL CAMION (CCN)</button>
-            <button class="btn-dxf" onclick="generaDXF('imbottitura')">📥 DXF Imbottitura</button>
-            <button class="btn-dxf" onclick="generaDXF('legno')">📥 DXF Legno</button>
-            <button id="btnRinforzi" class="btn-dxf" onclick="generaDXF('rinforzi')">📥 DXF Rinforzi</button>
-        </div>
+        <!-- Sezione pulsanti aggiornata in cuckoo_box.html -->
+<div style="margin-top: 5px; display: flex; flex-direction: column; gap: 5px;">
+    <button class="btn-success" onclick="esportaTabellaTagliDettagliata()">📊 ESPORTA TABELLA DETTAGLIATA</button>
+    <button class="btn-primary" style="background: #3b82f6;" onclick="esportaPDFCassaCompleto()">📄 ESPORTA PDF (SCHEDA + TAGLI)</button>
+    <div style="margin-top: 10px; border-top: 1px solid #334155; padding-top: 10px;"></div>
+    <button class="btn-danger" onclick="exportToCuckooNest()">🚀 INVIA AL CAMION (CCN)</button>
+</div>
     </div>
 </div>
 
@@ -809,7 +802,8 @@ function generaHtmlPezzi(objDict, tipo) {
 // ==========================================
 const sketch3DBox = (item, index) => (p) => {
     p.setup = () => { 
-        let d = p.canvas.parentElement; 
+        let d = p.canvas.parentElement;
+        p.setAttributes('preserveDrawingBuffer', true); 
         p.createCanvas(d.clientWidth || 400, d.clientHeight || 500, p.WEBGL); 
     };
     
@@ -1133,6 +1127,191 @@ function generaDXF(tipo) {
     document.body.removeChild(a); 
     URL.revokeObjectURL(url);
 }
+
+// --- 1. ESPORTAZIONE TABELLA DETTAGLIATA (CSV) ---
+// --- 1. ESPORTAZIONE TABELLA DETTAGLIATA (CSV) ---
+function esportaTabellaTagliDettagliata() {
+    if (itemsMaster.length === 0) return alert("Nessuna cassa presente.");
+
+    let csvContent = "Cassa;Materiale;Parte;Larghezza(mm);Altezza(mm);Spessore(mm)\n";
+    const set = getGlobalSettings();
+
+    itemsMaster.forEach(cassa => {
+        const res = cassa.results;
+        const addRows = (obj, tipo, spessore) => {
+            if (!obj) return;
+            Object.values(obj).forEach(p => {
+                csvContent += `${cassa.id};${tipo};${p.nome};${Math.round(p.l||p.w)};${Math.round(p.p||p.h)};${spessore}\n`;
+            });
+        };
+        addRows(res.pan, "LEGNO", set.legno);
+        addRows(res.imb, "ETAFOAM", set.i);
+        addRows(res.rinf, "RINFORZI", set.rSpess);
+    });
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `Dettaglio_Tagli_Dettagliato_${new Date().getTime()}.csv`;
+    link.click();
+}
+
+// --- 2. ESPORTAZIONE PDF PROFESSIONALE ---
+async function esportaPDFCassaCompleto() {
+    if (itemsMaster.length === 0) return alert("Nessuna cassa presente.");
+
+    // Controllo se tutti i 3D sono stati caricati (IntersectionObserver)
+    const totalCrates = itemsMaster.length;
+    const loadedSketches = Object.keys(p5Instances).length;
+
+    if (loadedSketches < totalCrates) {
+        alert(`Attenzione: Per includere le immagini in tutte le schede, scorri velocemente tutta la lista delle casse fino in fondo prima di cliccare su Esporta.\n(Caricate ${loadedSketches} su ${totalCrates})`);
+    }
+
+    const printWindow = window.open('', '_blank');
+    let html = `
+        <html>
+        <head>
+            <title>Cuckoo Box - Schede di Produzione</title>
+            <style>
+                @media print { .page-break { page-break-after: always; } }
+                body { font-family: sans-serif; padding: 0; margin: 0; color: #1e293b; background: #fff; }
+                .container { width: 190mm; margin: 0 auto; padding: 10mm; min-height: 270mm; position: relative; }
+                .header { border-bottom: 2px solid #3b82f6; padding-bottom: 10px; margin-bottom: 20px; display: flex; justify-content: space-between; }
+                .box-title { font-size: 26px; font-weight: bold; color: #3b82f6; margin: 0; }
+                
+                .main-img-container { 
+                    width: 100%; height: 120mm; background: #f8fafc; border-radius: 12px; 
+                    display: flex; align-items: center; justify-content: center; overflow: hidden; margin-bottom: 20px;
+                    border: 1px solid #e2e8f0;
+                }
+                .main-img-container img { max-width: 95%; max-height: 95%; object-fit: contain; }
+
+                .specs-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+                .specs-table td { padding: 12px; border-bottom: 1px solid #e2e8f0; font-size: 14px; }
+                .specs-table b { color: #475569; text-transform: uppercase; font-size: 11px; letter-spacing: 1px; }
+                
+                .tagli-header { background: #1e293b; color: white; padding: 10px 15px; border-radius: 6px; margin: 30px 0 15px 0; font-size: 14px; }
+                table.tagli { width: 100%; border-collapse: collapse; }
+                table.tagli th, table.tagli td { border: 1px solid #cbd5e1; padding: 10px; text-align: left; }
+                table.tagli th { background: #f1f5f9; font-size: 10px; color: #64748b; text-transform: uppercase; }
+                table.tagli b { font-size: 16px; color: #1e293b; }
+                
+                .footer-brand { position: absolute; bottom: 10mm; left: 10mm; font-size: 10px; color: #94a3b8; }
+            </style>
+        </head>
+        <body>
+    `;
+
+    for (let idx = 0; idx < itemsMaster.length; idx++) {
+        const cassa = itemsMaster[idx];
+        const dimF = cassa.results.dimensioniFinali;
+        const gruppi = raggruppaPezzi(cassa);
+
+        // Cattura l'immagine dal canvas specifico
+        let canvas = document.querySelector(`#c3d-${idx} canvas`);
+        let imgData = canvas ? canvas.toDataURL("image/png") : "";
+
+        // --- PAGINA 1: VISTA E SPECIFICHE ---
+        html += `
+            <div class="container page-break">
+                <div class="header">
+                    <h1 class="box-title">📦 ${cassa.id}</h1>
+                    <div style="text-align: right;">
+                        <div style="font-size: 14px; font-weight: bold; color: #1e293b;">SCHEDA TECNICA</div>
+                        <div style="font-size: 10px; color: #64748b;">DATA: ${new Date().toLocaleDateString()}</div>
+                    </div>
+                </div>
+
+                <div class="main-img-container">
+                    ${imgData ? `<img src="${imgData}">` : `<div style="color:#cbd5e1">Anteprima 3D non disponibile</div>`}
+                </div>
+
+                <table class="specs-table">
+                    <tr><td><b>Ingombro Esterno</b></td><td style="text-align:right; font-size: 18px; font-weight: bold;">${(dimF.lExt/10).toFixed(1)} x ${(dimF.pExt/10).toFixed(1)} x ${(dimF.hExt/10).toFixed(1)} cm</td></tr>
+                    <tr><td><b>Vano Interno</b></td><td style="text-align:right;">${(cassa.L/10).toFixed(1)} x ${(cassa.P/10).toFixed(1)} x ${(cassa.H/10).toFixed(1)} cm</td></tr>
+                    <tr><td><b>Tara Legno (Stimata)</b></td><td style="text-align:right; color:#ef4444; font-weight:bold;">${dimF.pesoLegno.toFixed(1)} KG</td></tr>
+                    <tr><td><b>Contenuto</b></td><td style="text-align:right;">${cassa.masterData ? cassa.masterData.titolo : 'Cassa Manuale'}</td></tr>
+                </table>
+                <div class="footer-brand">Cuckoo Suite - Modulo Produzione CCB</div>
+            </div>
+        `;
+
+        // --- PAGINA 2: LISTA TAGLI ACCORPATA ---
+        html += `
+            <div class="container page-break">
+                <div class="header">
+                    <h1 class="box-title">🪚 Lista Tagli: ${cassa.id}</h1>
+                </div>
+
+                ${Object.keys(gruppi).map(tipo => {
+                    if (Object.keys(gruppi[tipo]).length === 0) return '';
+                    return `
+                        <div class="tagli-header">${tipo}</div>
+                        <table class="tagli">
+                            <thead>
+                                <tr>
+                                    <th style="width: 60px;">Q.tà</th>
+                                    <th>Dimensioni (L x H)</th>
+                                    <th>Spess.</th>
+                                    <th>Pezzi corrispondenti</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${Object.keys(gruppi[tipo]).map(dim => {
+                                    let p = gruppi[tipo][dim];
+                                    return `
+                                        <tr>
+                                            <td><b>${p.qta}x</b></td>
+                                            <td style="font-size: 15px;">${p.w} x ${p.h} mm</td>
+                                            <td>${p.sp} mm</td>
+                                            <td style="color:#64748b; font-size: 11px;">${p.nomi.join(", ")}</td>
+                                        </tr>
+                                    `;
+                                }).join('')}
+                            </tbody>
+                        </table>
+                    `;
+                }).join('')}
+                <div class="footer-brand">Cuckoo Suite - Modulo Produzione CCB</div>
+            </div>
+        `;
+    }
+
+    html += `</body></html>`;
+
+    printWindow.document.write(html);
+    printWindow.document.close();
+    
+    // Attendiamo il rendering del contenuto
+    printWindow.onload = function() {
+        printWindow.print();
+    };
+}
+
+// Helper per raggruppare i pezzi (Mantenuto e pulito)
+function raggruppaPezzi(cassa) {
+    const set = getGlobalSettings();
+    const gruppi = { "LEGNO": {}, "ETAFOAM": {}, "RINFORZI": {} };
+    const processa = (lista, tipo, spessore) => {
+        if (!lista) return;
+        Object.values(lista).forEach(p => {
+            let w = Math.round(p.l || p.w);
+            let h = Math.round(p.p || p.h);
+            let dim = w >= h ? `${w}x${h}x${spessore}` : `${h}x${w}x${spessore}`;
+            if (!gruppi[tipo][dim]) {
+                gruppi[tipo][dim] = { qta: 0, w: Math.max(w, h), h: Math.min(w, h), sp: spessore, nomi: [] };
+            }
+            gruppi[tipo][dim].qta++;
+            if (!gruppi[tipo][dim].nomi.includes(p.nome)) gruppi[tipo][dim].nomi.push(p.nome);
+        });
+    };
+    processa(cassa.results.pan, "LEGNO", set.legno);
+    processa(cassa.results.imb, "ETAFOAM", set.i);
+    processa(cassa.results.rinf, "RINFORZI", set.rSpess);
+    return gruppi;
+}
+
 </script>
 </body>
 </html>

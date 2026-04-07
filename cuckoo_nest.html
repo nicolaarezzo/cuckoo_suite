@@ -374,17 +374,9 @@
 <body>
 
 <div id="sidebar">
-    <div class="toggle-tab-app" onclick="toggleSidebar()">MENU CCN</div>
+    <div class="toggle-tab-app" onclick="toggleSidebar()">LOGISTICA</div>
     <div class="sidebar-content">
-        <div style="display: flex; flex-direction: column; gap: 4px; justify-content: center; align-items: flex-start; margin-bottom: 10px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-                <div style="display: flex; align-items: center; gap: 8px;">
-                    <h2 style="margin:0; color: #ef4444; font-size: 1.4em;">Cuckoo Nest</h2>
-                    
-                </div>
-            </div>
-            <span style="font-style: italic; color: #94a3b8; font-size: 11px;">"Qualcuno volò sul nido del cuculo"</span>
-        </div>
+        
     
     <div class="card">
         <label>Impostazioni Vano di Carico Predefinito (cm)</label>
@@ -429,12 +421,7 @@
         </div>
     </div>
 
-    <div class="card" style="border-left: 4px solid #10b981; background: #064e3b; text-align: center; padding: 20px;">
-        <span style="font-size:30px;">📡</span><br>
-        <b style="color: #6ee7b7;">In attesa di Casse...</b><br>
-        <span style="font-size:10px; color:#a7f3d0;">Invia le casse da CCE o CCB. Appariranno in banchina in automatico.</span>
-    </div>
-
+    
     <div class="card" style="border-left: 4px solid #3b82f6;">
         <label style="color: #60a5fa;">Aggiungi Cassa Singola (CM)</label>
         <div class="grid-3">
@@ -467,8 +454,8 @@
     <div id="log" class="print-hide">> Ambiente pronto. Premi Ctrl+Z per annullare.</div>
     
     <div style="margin-top: 15px; display: flex; flex-direction: column; gap: 5px;">
-        <button class="btn-export print-hide" onclick="exportDataExcel()">📊 ESPORTA TABELLA</button>
-        <button onclick="window.print()" class="print-hide" style="background: #64748b; color: white;">🖨️ STAMPA PDF</button>
+        <button class="btn-export print-hide" style="background: #10b981; color: white;" onclick="exportDataExcel()">📊 ESPORTA TABELLA</button>
+        <button onclick="window.print()" class="print-hide" style="background: #10b981; color: white;">🖨️ STAMPA PDF</button>
         
     </div>
     </div>

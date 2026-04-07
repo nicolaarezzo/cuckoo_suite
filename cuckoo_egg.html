@@ -435,11 +435,9 @@
     <div class="toggle-tab-app" onclick="toggleSidebar()">MENU CCE</div>
     <div class="sidebar-content">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-            <h2 style="margin:0; color: #10b981; font-size: 1.4em;">Cuckoo Egg</h2>
             <button onclick="document.getElementById('settingsModal').style.display='flex'" style="background: transparent; color: #8b5cf6; border: 1px solid #8b5cf6; padding: 4px 8px; width: auto; font-size: 10px;">⚙️ AI & MEM</button>
         </div>
-        <span style="font-style: italic; color: #94a3b8; font-size: 11px;">"Il cuculo depone le sue uova nei nidi altrui"</span>
-
+        
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
             <div class="stat-badge">
                 <div style="font-size:10px; color:#94a3b8;">TOTALE OPERE</div>
@@ -451,19 +449,18 @@
             </div>
         </div>
 
-        <div class="card" style="margin-top: 10px; border-left: 4px solid #10b981;">
-            <label style="color: #6ee7b7;">Gestione Dati</label>
-            <button class="btn-primary" onclick="openImporter()">🪄 IMPORTA NUOVE OPERE</button>
-            <button class="btn-primary" onclick="aggiungiItemManuale()" style="background: #3b82f6; border-color: #2563eb; margin-top: 5px;">➕ AGGIUNGI OPERA MANUALE</button>
-            <button style="background: transparent; border: 1px solid #ef4444; color: #ef4444; margin-top: 10px;" onclick="svuotaDB()">🗑️ SVUOTA DATABASE</button>
+        <div class="card" style="margin-top: 10px; border-left: 4px solid #8b5cf6;">
+            <label style="color: #c4b5fd;">Acquisizione Dati</label>
+            <button class="btn-ai" style="background: #8b5cf6;" onclick="openImporter()">🧠 IMPORTA CON IA / EXCEL</button>
+            <button class="btn-primary" onclick="aggiungiItemManuale()" style="background: #334155; margin-top: 5px;">➕ AGGIUNGI RIGA MANUALE</button>
+            <button style="background: transparent; border: 1px solid #ef4444; color: #ef4444; margin-top: 10px;" onclick="svuotaDB()">🗑️ SVUOTA DB</button>
         </div>
 
         <div class="card" style="border-left: 4px solid #3b82f6; margin-top: auto;">
-            <label style="color: #60a5fa;">Distribuisci Opere Selezionate</label>
-            <p style="font-size:10px; color:#94a3b8; margin-top:0;">Il sistema inoltrerà solo le righe dotate delle dimensioni minime richieste per il calcolo.</p>
+            <label style="color: #60a5fa;">Distribuisci Selezionate</label>
             <div style="display: flex; gap: 5px;">
-                <button class="btn-export" style="font-size: 11px; padding: 10px;" onclick="sendSelectedToCCB()">📦 A PRODUZIONE (CCB)</button>
-                <button class="btn-danger" style="font-size: 11px; padding: 10px;" onclick="sendSelectedToCCN()">🚚 A LOGISTICA (CCN)</button>
+                <button class="btn-export" style="background: #3b82f6; font-size: 10px;" onclick="sendSelectedToCCB()">📦 A PRODUZIONE</button>
+                <button class="btn-export" style="background: #3b82f6; font-size: 10px;" onclick="sendSelectedToCCN()">🚚 A LOGISTICA</button>
             </div>
         </div>
     </div>
@@ -1433,43 +1430,71 @@ function confirmImport() {
 
 // 1. Sposta o elimina i dati da una colonna all'altra
 function reassignColumn(oldField, newField) {
-    if (oldField === newField) return;
-
-    // SCENARIO A: L'utente vuole eliminare la colonna
-    if (newField === 'ignore') {
-        if (confirm(`⚠️ ATTENZIONE: Vuoi svuotare e nascondere l'intera colonna "${oldField}"? I dati andranno persi.`)) {
-            pushToHistory(); // 📸 SCATTA FOTO (Aggiunto per Ctrl+Z)
-            
-            masterDB.forEach(opera => {
-                delete opera[oldField]; // Cancella il dato dal database
-            });
-            saveDB(); 
-            renderMainTable(); // La colonna, essendo vuota, scomparirà magicamente!
-            alert("🗑️ Colonna eliminata con successo.");
-        } else {
-            renderMainTable(); // Se annulla, resetta il menu a tendina
-        }
-        return; // Esce dalla funzione
+    if (oldField === newField || newField === 'ignore') {
+        // Se non stiamo aggiungendo una nuova colonna, facciamo solo un refresh per sicurezza
+        if (oldField !== 'colonna_extra') renderMainTable();
+        return;
     }
 
-    // SCENARIO B: L'utente vuole spostare i dati in un'altra colonna
-    if (confirm(`Spostare i dati da "${oldField}" a "${newField}"? (I dati originali verranno rimossi dalla vecchia colonna)`)) {
-        pushToHistory(); // 📸 SCATTA FOTO (Aggiunto per Ctrl+Z)
-        
-        masterDB.forEach(opera => {
-            if (opera[oldField] !== undefined && opera[oldField] !== null) {
-                // Copia il dato nel nuovo campo
-                opera[newField] = opera[oldField];
-                // ELIMINA il dato dal vecchio campo
-                delete opera[oldField];
+    pushToHistory(); // 📸 Salva lo stato per il Ctrl+Z
+
+    // --- CASO A: NUOVA COLONNA (Dalla colonna Jolly) ---
+    if (oldField === 'colonna_extra') {
+        // 1. Assicuriamoci che ci sia almeno una riga nel database
+        if (masterDB.length === 0) {
+            masterDB.push({ id: "OP-001", _selected: false });
+        }
+
+        // 2. Troviamo un'etichetta leggibile per il riempimento automatico
+        // Cerchiamo l'opzione nel menu a tendina per avere il nome "bello" (es. "Tecnica")
+        const tempSelect = document.createElement('select');
+        tempSelect.innerHTML = DB_SCHEMA;
+        const option = Array.from(tempSelect.options).find(opt => opt.value === newField);
+        const labelPezzo = option ? option.text.replace(/[^a-zA-Z0-9 ]/g, '').trim() : newField.toUpperCase();
+
+        // 3. Scriviamo il nome della colonna nella cella della PRIMA riga
+        // Questo impedisce al filtro "nascondi vuote" di far sparire la colonna
+        masterDB[0][newField] = labelPezzo;
+
+        // 4. Inizializziamo le altre righe come esistenti (ma vuote)
+        masterDB.forEach((opera, idx) => {
+            if (idx !== 0 && !opera.hasOwnProperty(newField)) {
+                opera[newField] = ""; 
             }
         });
 
-        saveDB(); 
-        renderMainTable(); 
-        alert("✅ Dati riallocati e puliti.");
-    } else {
-        renderMainTable(); // Se annulla lo spostamento, resetta il menu
+        saveDB();
+        renderMainTable();
+
+        // 5. FOCUS AUTOMATICO: Selezioniamo il testo appena scritto così l'utente può cambiarlo subito
+        setTimeout(() => {
+            const firstRow = document.querySelector('#masterTableBody tr');
+            if (firstRow) {
+                // Troviamo l'ultima cella editabile (che è la nostra nuova colonna)
+                const cells = firstRow.querySelectorAll('td[contenteditable="true"]');
+                const lastCell = cells[cells.length - 1];
+                if (lastCell) {
+                    lastCell.focus();
+                    // Seleziona tutto il testo (es. "TECNICA") per permettere la sovrascrittura immediata
+                    document.execCommand('selectAll', false, null);
+                }
+            }
+        }, 150);
+    } 
+    // --- CASO B: SPOSTAMENTO DATI TRA COLONNE ESISTENTI ---
+    else {
+        if (confirm(`Spostare i dati da "${oldField}" a "${newField}"?`)) {
+            masterDB.forEach(opera => {
+                if (opera.hasOwnProperty(oldField)) {
+                    opera[newField] = opera[oldField];
+                    delete opera[oldField];
+                }
+            });
+            saveDB();
+            renderMainTable();
+        } else {
+            renderMainTable();
+        }
     }
 }
 
